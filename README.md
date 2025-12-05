@@ -7,7 +7,7 @@ Repo created. 14-day public build starts NOW.
 ## Daily Progress
 | Date       | What I Shipped                          | Link/Post |
 |------------|-----------------------------------------|---------|
-| Day 0      | Repo + announcement                     | [Twitter thread](link) |
+| Day 0      | Repo + announcement                     | [Twitter thread](https://x.com/AICareerAcc/status/1996854594539000097) |
 | Day 1      | Golden dataset + LiteLLM setup          | coming  |
 | ...        |                                         |         |
 
