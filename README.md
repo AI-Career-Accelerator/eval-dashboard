@@ -10,7 +10,7 @@ Catch model drift before it kills your product.
 | Day 1      | Golden dataset + LiteLLM setup          | [Twitter thread](https://x.com/AICareerAcc/status/1998060139556065392)  |
 | Day 2      | Auto Evaluation                         | [Twitter thread](https://x.com/AICareerAcc/status/1998294310358515855)         |
 | Day 3      | Persistent logging with SQLAlchemy      | [Twitter thread](https://x.com/AICareerAcc/status/1998688624607723935)   |
-| Day 4      | FastAPI Backend + GitHub Actions CI/CD  | [Twitter thread](https://x.com/AICareerAcc/status/1998688624607723935) |
+| Day 4      | FastAPI Backend + GitHub Actions CI/CD  | [Twitter thread](https://x.com/AICareerAcc/status/1998926858851901575) |
 
 ## Project Log
 
@@ -246,7 +246,7 @@ Built REST API and automated CI/CD pipeline for continuous model evaluation.
 python start_api.py  # Start server at http://127.0.0.1:8000
 python test_api.py   # Test all endpoints
 ```
-
+![FASTAPIs](images/Day4-2.png)
 ---
 
 #### GitHub Actions CI/CD
@@ -260,15 +260,10 @@ python test_api.py   # Test all endpoints
 - 7 models × 50 questions = ~15 min
 - Artifacts saved for 30 days
 
-**Setup:**
-1. Add 4 GitHub secrets (Azure keys)
-2. Push to main
-3. See results in Actions tab
-
 **Result:** Catches regressions 30 seconds after merge. No deployment needed.
 
 See `GITHUB_ACTIONS_SETUP.md` for detailed setup guide.
-
+![GITHUB CICD](images/Day4-1.png)
 ---
 
 #### What's Next (Day 5+)
