@@ -27,4 +27,13 @@ env/
 .DS_Store
 Thumbs.db
 
+# Claude Code
 .claude
+
+# Data directory (databases, evaluation results)
+data/*.db
+data/*.json
+data/outputs/
+
+# Keep the golden dataset
+!data/golden_dataset.csv

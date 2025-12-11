@@ -33,7 +33,7 @@ Repo created. 14-day public build starts NOW.
     *   An interesting quirk was discovered during testing: the model deployed as `azure/healthApp-gpt-5-chat` responded by identifying itself as a Claude model. This will be an interesting point to investigate further.
 
     ![Response: Hello!I am working correctly
-    My model name is **Claude 3.5 Sonnet**.](images/Day1-1.png)
+    My model name is **Claude 3.5 Sonnet**.](docs/images/Day1-1.png)
 
 ### Day 2 – Automatic Evaluation Harness (Parallel, Scalable, Fast)
 
@@ -88,7 +88,7 @@ Refactored into a **parallel evaluation harness** using:
 - Dashboard visualization  
 - Drift detection (daily/weekly model regression alerts)
 
-![Evaluate parallelly](images/Day2-1.png)
+![Evaluate parallelly](docs/images/Day2-1.png)
 
 ### Day 3 – Persistent Logging (SQLite + SQLAlchemy)
 
@@ -246,7 +246,7 @@ Built REST API and automated CI/CD pipeline for continuous model evaluation.
 python start_api.py  # Start server at http://127.0.0.1:8000
 python test_api.py   # Test all endpoints
 ```
-![FASTAPIs](images/Day4-2.png)
+![FASTAPIs](docs/images/Day4-2.png)
 ---
 
 #### GitHub Actions CI/CD
@@ -263,7 +263,7 @@ python test_api.py   # Test all endpoints
 **Result:** Catches regressions 30 seconds after merge. No deployment needed.
 
 See `GITHUB_ACTIONS_SETUP.md` for detailed setup guide.
-![GITHUB CICD](images/Day4-1.png)
+![GITHUB CICD](docs/images/Day4-1.png)
 ---
 
 #### What's Next (Day 5+)

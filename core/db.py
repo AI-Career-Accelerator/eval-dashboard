@@ -10,7 +10,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, 
 from sqlalchemy.orm import sessionmaker, relationship, Session, declarative_base
 
 # Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///eval_dashboard.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///data/eval_dashboard.db")
 engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

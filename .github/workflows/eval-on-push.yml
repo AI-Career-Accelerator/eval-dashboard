@@ -34,7 +34,7 @@ jobs:
 
       - name: Initialize database
         run: |
-          python -c "from src.db import init_db; init_db()"
+          python -c "from core.db import init_db; init_db()"
 
       - name: Install LiteLLM
         run: |
@@ -85,7 +85,7 @@ jobs:
       - name: Create .env file
         run: |
           echo "API_KEY=sk-test" > .env
-          echo "DATABASE_URL=sqlite:///eval_dashboard.db" >> .env
+          echo "DATABASE_URL=sqlite:///data/eval_dashboard.db" >> .env
 
       - name: Run lightweight evaluation (CI mode)
         id: evaluation
@@ -98,7 +98,7 @@ jobs:
           sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
           from api.background import run_evaluation_task
-          from src.db import init_db, get_runs_by_model
+          from core.db import init_db, get_runs_by_model
 
           # Initialize DB
           init_db()
@@ -166,7 +166,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: eval-results-${{ github.sha }}
-          path: eval_dashboard.db
+          path: data/eval_dashboard.db
           retention-days: 30
 
       - name: Comment PR with results
@@ -285,11 +285,11 @@ jobs:
       - name: Create .env file
         run: |
           echo "API_KEY=sk-test" > .env
-          echo "DATABASE_URL=sqlite:///eval_dashboard.db" >> .env
+          echo "DATABASE_URL=sqlite:///data/eval_dashboard.db" >> .env
 
       - name: Initialize database
         run: |
-          python -c "from src.db import init_db; init_db()"
+          python -c "from core.db import init_db; init_db()"
 
       - name: Run full evaluation
         run: |
@@ -323,6 +323,6 @@ jobs:
         with:
           name: full-eval-results-${{ github.sha }}
           path: |
-            eval_dashboard.db
-            evaluation_results_*.json
+            data/eval_dashboard.db
+            data/evaluation_results_*.json
           retention-days: 90

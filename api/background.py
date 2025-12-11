@@ -17,8 +17,8 @@ load_dotenv()
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from judge import score_answer
-from src.db import save_run
+from core.judge import score_answer
+from core.db import save_run
 
 
 # LiteLLM proxy configuration
@@ -28,7 +28,7 @@ API_KEY = "sk-test"
 URL = "http://127.0.0.1:4000/chat/completions"
 
 
-def load_dataset(csv_path: str = "golden_dataset.csv", max_questions: Optional[int] = None) -> List[Dict]:
+def load_dataset(csv_path: str = "data/golden_dataset.csv", max_questions: Optional[int] = None) -> List[Dict]:
     """Load golden dataset from CSV."""
     questions = []
     with open(csv_path, newline="", encoding="utf-8") as f:

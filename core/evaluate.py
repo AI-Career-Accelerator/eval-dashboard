@@ -5,10 +5,10 @@ import time
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
-from judge import score_answer  # <-- use your real judge
+from core.judge import score_answer  # <-- use your real judge
 import sys
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from src.db import init_db, save_run
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.db import init_db, save_run
 
 load_dotenv()
 
@@ -33,7 +33,7 @@ MODELS = [
 ]
 
 # Load golden dataset CSV
-def load_dataset(csv_path="golden_dataset.csv"):
+def load_dataset(csv_path="data/golden_dataset.csv"):
     questions = []
     with open(csv_path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)

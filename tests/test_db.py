@@ -9,9 +9,9 @@ import time
 import requests
 from dotenv import load_dotenv
 import sys
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from src.db import init_db, save_run, get_recent_runs, get_run_by_id
-from judge import score_answer
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.db import init_db, save_run, get_recent_runs, get_run_by_id
+from core.judge import score_answer
 
 load_dotenv()
 
@@ -27,7 +27,8 @@ TEST_MODELS = [
 def load_test_dataset(limit=5):
     """Load just the first few questions for quick testing."""
     questions = []
-    with open("golden_dataset.csv", newline="", encoding="utf-8") as f:
+    dataset_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "golden_dataset.csv")
+    with open(dataset_path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for i, row in enumerate(reader):
             if i >= limit:

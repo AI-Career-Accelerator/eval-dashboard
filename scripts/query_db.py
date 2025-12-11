@@ -4,9 +4,9 @@ Useful for inspecting stored evaluation runs and results.
 """
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.db import get_recent_runs, get_runs_by_model, get_run_by_id, get_drift_analysis, init_db
+from core.db import get_recent_runs, get_runs_by_model, get_run_by_id, get_drift_analysis, init_db
 
 
 def print_recent_runs(limit=10):

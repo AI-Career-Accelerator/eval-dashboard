@@ -28,7 +28,7 @@ from api.models import (
     HealthResponse
 )
 from api.background import run_evaluation_task
-from src.db import (
+from core.db import (
     init_db,
     get_run_by_id,
     get_recent_runs,
