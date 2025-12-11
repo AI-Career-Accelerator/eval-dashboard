@@ -1,0 +1,328 @@
+name: Eval Dashboard CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  PYTHON_VERSION: "3.10"
+
+jobs:
+  evaluate-models:
+    name: Run Model Evaluations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Initialize database
+        run: |
+          python -c "from src.db import init_db; init_db()"
+
+      - name: Install LiteLLM
+        run: |
+          pip install litellm[proxy]
+
+      - name: Create LiteLLM config for CI
+        run: |
+          cat > litellm_config_ci.yaml << 'EOF'
+          model_list:
+            # Azure OpenAI - GPT-4o-mini (fast, cheap)
+            - model_name: gpt-4o-mini
+              litellm_params:
+                model: azure/neogpeer-formatScenario-gpt-4o-mini
+                api_base: ${{ secrets.AZURE_API_BASE }}
+                api_key: ${{ secrets.AZURE_API_KEY }}
+                api_version: "2025-01-01-preview"
+
+            # Azure Anthropic - Claude Sonnet (high quality)
+            - model_name: claude-sonnet-4-5
+              litellm_params:
+                model: anthropic/claude-sonnet-4-5
+                api_base: ${{ secrets.AZURE_ANTHROPIC_BASE }}
+                api_key: ${{ secrets.AZURE_API_KEY }}
+
+            # Azure AI - DeepSeek (good value)
+            - model_name: DeepSeek-V3.1
+              litellm_params:
+                model: azure_ai/DeepSeek-V3.1
+                api_base: ${{ secrets.AZURE_OPENAI_BASE }}
+                api_key: ${{ secrets.AZURE_API_KEY }}
+
+          litellm_settings:
+            drop_params: true
+            success_callback: []
+            failure_callback: []
+          EOF
+
+      - name: Start LiteLLM proxy
+        run: |
+          nohup litellm --config litellm_config_ci.yaml --port 4000 > litellm.log 2>&1 &
+          sleep 10
+          echo "LiteLLM proxy started"
+
+      - name: Verify LiteLLM proxy is running
+        run: |
+          curl -f http://127.0.0.1:4000/health || (cat litellm.log && exit 1)
+
+      - name: Create .env file
+        run: |
+          echo "API_KEY=sk-test" > .env
+          echo "DATABASE_URL=sqlite:///eval_dashboard.db" >> .env
+
+      - name: Run lightweight evaluation (CI mode)
+        id: evaluation
+        run: |
+          # Create a CI-specific evaluation script that runs only a subset
+          cat > run_ci_eval.py << 'EOF'
+          import os
+          import sys
+          import json
+          sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+          from api.background import run_evaluation_task
+          from src.db import init_db, get_runs_by_model
+
+          # Initialize DB
+          init_db()
+
+          # Run evaluation on multiple models with 10 questions for speed
+          print("Running CI evaluation...")
+          result = run_evaluation_task(
+              models=["gpt-4o-mini", "claude-sonnet-4-5", "DeepSeek-V3.1"],
+              max_questions=10,
+              job_id="ci-run"
+          )
+
+          print(f"\n{'='*80}")
+          print("CI EVALUATION RESULTS")
+          print(f"{'='*80}\n")
+
+          for model_result in result['models']:
+              model = model_result['model']
+              results = model_result['results']
+
+              if results:
+                  accuracy = sum(r['score'] for r in results) / len(results)
+                  avg_latency = sum(r['latency'] for r in results if r['latency']) / len([r for r in results if r['latency']])
+
+                  print(f"Model: {model}")
+                  print(f"Accuracy: {accuracy:.2%}")
+                  print(f"Avg Latency: {avg_latency:.2f}s")
+                  print(f"Questions: {len(results)}")
+
+                  # Check historical performance
+                  historical_runs = get_runs_by_model(model)
+                  if len(historical_runs) > 1:
+                      best_accuracy = max(r.accuracy for r in historical_runs[1:])  # Exclude current run
+                      print(f"Best Historical Accuracy: {best_accuracy:.2%}")
+
+                      # Drift check
+                      DRIFT_THRESHOLD = 0.10  # 10% drop is concerning in CI
+                      if accuracy < best_accuracy - DRIFT_THRESHOLD:
+                          print(f"\n⚠️  DRIFT DETECTED! Accuracy dropped by {(best_accuracy - accuracy):.2%}")
+                          print(f"Current: {accuracy:.2%}, Best: {best_accuracy:.2%}")
+                          sys.exit(1)  # Fail the CI build
+                      else:
+                          print(f"✓ No significant drift detected")
+                  else:
+                      print("(First run - no baseline for comparison)")
+
+                  # Output for GitHub Actions
+                  with open(os.environ.get('GITHUB_OUTPUT', 'output.txt'), 'a') as f:
+                      f.write(f"accuracy={accuracy:.4f}\n")
+                      f.write(f"model={model}\n")
+
+          print(f"\n{'='*80}\n")
+          EOF
+
+          python run_ci_eval.py
+
+      - name: Check LiteLLM logs (on failure)
+        if: failure()
+        run: |
+          echo "LiteLLM Proxy Logs:"
+          cat litellm.log
+
+      - name: Upload evaluation database as artifact
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: eval-results-${{ github.sha }}
+          path: eval_dashboard.db
+          retention-days: 30
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const accuracy = '${{ steps.evaluation.outputs.accuracy }}';
+            const model = '${{ steps.evaluation.outputs.model }}';
+
+            const comment = `## 🤖 Eval Dashboard CI Results
+
+            **Model**: ${model}
+            **Accuracy**: ${(parseFloat(accuracy) * 100).toFixed(2)}%
+            **Commit**: ${context.sha.substring(0, 7)}
+            **Questions**: 10 (CI subset)
+
+            ${parseFloat(accuracy) >= 0.75 ? '✅' : '⚠️'} ${parseFloat(accuracy) >= 0.75 ? 'Evaluation passed!' : 'Accuracy below expected threshold'}
+
+            Full evaluation results available in workflow artifacts.
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # Full evaluation job (manual trigger only)
+  full-evaluation:
+    name: Full Model Evaluation (Manual Trigger)
+    runs-on: ubuntu-latest
+    # Only run when manually triggered via workflow_dispatch
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install litellm[proxy]
+
+      - name: Create LiteLLM config
+        run: |
+          cat > litellm_config_full.yaml << 'EOF'
+          model_list:
+            # Azure OpenAI Models
+            - model_name: gpt-4o-mini
+              litellm_params:
+                model: azure/neogpeer-formatScenario-gpt-4o-mini
+                api_base: ${{ secrets.AZURE_API_BASE }}
+                api_key: ${{ secrets.AZURE_API_KEY }}
+                api_version: "2025-01-01-preview"
+
+            - model_name: gpt-4o
+              litellm_params:
+                model: azure/gpt-4o
+                api_base: ${{ secrets.AZURE_API_BASE }}
+                api_key: ${{ secrets.AZURE_API_KEY }}
+                api_version: "2025-01-01-preview"
+
+            - model_name: gpt-5-chat
+              litellm_params:
+                model: azure/healthApp-gpt-5-chat
+                api_base: ${{ secrets.AZURE_API_BASE }}
+                api_key: ${{ secrets.AZURE_API_KEY }}
+                api_version: "2025-01-01-preview"
+
+            # Azure Anthropic Models
+            - model_name: claude-sonnet-4-5
+              litellm_params:
+                model: anthropic/claude-sonnet-4-5
+                api_base: ${{ secrets.AZURE_ANTHROPIC_BASE }}
+                api_key: ${{ secrets.AZURE_API_KEY }}
+
+            - model_name: claude-haiku-4-5
+              litellm_params:
+                model: anthropic/claude-haiku-4-5
+                api_base: ${{ secrets.AZURE_ANTHROPIC_BASE }}
+                api_key: ${{ secrets.AZURE_API_KEY }}
+
+            # Azure AI Marketplace Models
+            - model_name: DeepSeek-V3.1
+              litellm_params:
+                model: azure_ai/DeepSeek-V3.1
+                api_base: ${{ secrets.AZURE_OPENAI_BASE }}
+                api_key: ${{ secrets.AZURE_API_KEY }}
+
+            - model_name: grok-3
+              litellm_params:
+                model: azure_ai/grok-3
+                api_base: ${{ secrets.AZURE_OPENAI_BASE }}
+                api_key: ${{ secrets.AZURE_API_KEY }}
+
+          litellm_settings:
+            drop_params: true
+            success_callback: []
+            failure_callback: []
+          EOF
+
+      - name: Start LiteLLM proxy
+        run: |
+          nohup litellm --config litellm_config_full.yaml --port 4000 > litellm.log 2>&1 &
+          sleep 10
+
+      - name: Create .env file
+        run: |
+          echo "API_KEY=sk-test" > .env
+          echo "DATABASE_URL=sqlite:///eval_dashboard.db" >> .env
+
+      - name: Initialize database
+        run: |
+          python -c "from src.db import init_db; init_db()"
+
+      - name: Run full evaluation
+        run: |
+          # Create full evaluation script
+          cat > run_full_eval.py << 'EOF'
+          import os
+          import sys
+          sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+          from api.background import run_evaluation_task
+
+          # Run full evaluation on multiple Azure models
+          result = run_evaluation_task(
+              models=["gpt-4o-mini", "gpt-4o", "claude-sonnet-4-5", "DeepSeek-V3.1", "grok-3"],
+              max_questions=None,  # All questions (50)
+              job_id="full-ci-run"
+          )
+
+          print("\n" + "="*80)
+          print("FULL EVALUATION COMPLETE")
+          print("="*80)
+          for model_result in result['models']:
+              print(f"\nModel: {model_result['model']}")
+              print(f"Time: {model_result['evaluation_time']:.2f}s")
+          EOF
+
+          python run_full_eval.py
+
+      - name: Upload full evaluation results
+        uses: actions/upload-artifact@v3
+        with:
+          name: full-eval-results-${{ github.sha }}
+          path: |
+            eval_dashboard.db
+            evaluation_results_*.json
+          retention-days: 90

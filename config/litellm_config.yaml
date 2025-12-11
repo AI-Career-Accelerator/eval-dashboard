@@ -1,0 +1,102 @@
+model_list:
+  # Azure OpenAI - GPT-5
+  - model_name: gpt-5-chat
+    litellm_params:
+      model: azure/healthApp-gpt-5-chat # Azure deployment name
+      api_base: "os.environ/AZURE_API_BASE"
+      api_key: "os.environ/AZURE_API_KEY"
+      api_version: "2025-01-01-preview" # Optional: latest API version
+
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: azure/neogpeer-formatScenario-gpt-4o-mini # Azure deployment name
+      api_base: "os.environ/AZURE_API_BASE"
+      api_key: "os.environ/AZURE_API_KEY"
+      api_version: "2025-01-01-preview" # Optional: latest API version
+
+  - model_name: gpt-4o
+    litellm_params:
+      model: azure/gpt-4o # Azure deployment name
+      api_base: "os.environ/AZURE_API_BASE"
+      api_key: "os.environ/AZURE_API_KEY"
+      api_version: "2025-01-01-preview" # Optional: latest API version
+
+  - model_name: claude-opus-4-5
+    litellm_params:
+      model: anthropic/claude-opus-4-5 # Azure deployment name
+      api_base: "os.environ/AZURE_ANTHROPIC_BASE"
+      api_key: "os.environ/AZURE_API_KEY"
+      api_version: "2023-06-01" # Optional: latest API version
+      drop_params: True  # ADD THIS LINE - removes unsupported parameters
+      rpm: 5000                                # optional rate limits
+      tpm: 200000                              # optional tokens per minute limit
+
+  - model_name: claude-sonnet-4-5
+    litellm_params:
+      model: anthropic/claude-sonnet-4-5 # Azure deployment name
+      api_base: "os.environ/AZURE_ANTHROPIC_BASE"
+      api_key: "os.environ/AZURE_API_KEY"
+
+  - model_name: claude-haiku-4-5
+    litellm_params:
+      model: anthropic/claude-haiku-4-5 # Azure deployment name
+      api_base: "os.environ/AZURE_ANTHROPIC_BASE"
+      api_key: "os.environ/AZURE_API_KEY" 
+
+
+
+  - model_name: Kimi-K2-Thinking
+    litellm_params:
+      model: "azure_ai/Kimi-K2-Thinking"           # exact deployment name from portal
+      api_base: "os.environ/AZURE_OPENAI_BASE" 
+      api_key: "os.environ/AZURE_API_KEY"
+
+
+  - model_name: DeepSeek-V3.1
+    litellm_params:
+      model: "azure_ai/DeepSeek-V3.1" # Or whatever internal name your code expects
+      api_base: "os.environ/AZURE_OPENAI_BASE" 
+      api_key: "os.environ/AZURE_API_KEY"
+
+  - model_name: grok-3
+    litellm_params:
+      model: azure_ai/grok-3
+      api_base: "os.environ/AZURE_OPENAI_BASE"
+      api_key: "os.environ/AZURE_API_KEY"
+
+  - model_name: Mistral-Large-3
+    litellm_params:
+      model: azure_ai/Mistral-Large-3
+      api_base: "os.environ/AZURE_OPENAI_BASE"
+      api_key: "os.environ/AZURE_API_KEY"
+      
+      
+  - model_name: Llama-4-Maverick-17B-128E-Instruct-FP8
+    litellm_params:
+      model: azure_ai/Llama-4-Maverick-17B-128E-Instruct-FP8
+      api_base: "os.environ/AZURE_OPENAI_BASE"
+      api_key: "os.environ/AZURE_API_KEY"
+
+  - model_name: Phi-4-reasoning
+    litellm_params:
+      model: azure_ai/Phi-4-reasoning
+      api_base: "os.environ/AZURE_OPENAI_BASE"
+      api_key: "os.environ/AZURE_API_KEY"
+
+
+
+
+
+  # DeepSeek - V3
+  - model_name: deepseek-v3
+    litellm_params:
+      model: deepseek/deepseek-chat
+      api_key: "os.environ/DEEPSEEK_API_KEY"
+      api_base: "https://api.deepseek.com"
+
+  # DeepSeek - Coder
+  - model_name: deepseek-coder
+    litellm_params:
+      model: deepseek/deepseek-coder
+      api_key: "os.environ/DEEPSEEK_API_KEY"
+      api_base: "https://api.deepseek.com"

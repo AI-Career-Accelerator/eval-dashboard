@@ -1,0 +1,30 @@
+# Environment variables
+.env
+
+# Personal plans / notes
+14daysplan.md
+
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+
+# Python virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# IDE / Editor configs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+.claude

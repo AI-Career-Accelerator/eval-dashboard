@@ -1,0 +1,73 @@
+model_list:
+  # Azure OpenAI - GPT-5
+  - model_name: gpt-5-chat
+    litellm_params:
+      model: azure/healthApp-gpt-5-chat # Azure deployment name
+      api_base: "os.environ/AZURE_API_BASE"
+      api_key: "os.environ/AZURE_API_KEY"
+      api_version: "2025-01-01-preview" # Optional: latest API version
+
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: azure/neogpeer-formatScenario-gpt-4o-mini # Azure deployment name
+      api_base: "os.environ/AZURE_API_BASE"
+      api_key: "os.environ/AZURE_API_KEY"
+      api_version: "2025-01-01-preview" # Optional: latest API version
+
+  - model_name: gpt-4o
+    litellm_params:
+      model: azure/gpt-4o # Azure deployment name
+      api_base: "os.environ/AZURE_API_BASE"
+      api_key: "os.environ/AZURE_API_KEY"
+      api_version: "2025-01-01-preview" # Optional: latest API version
+
+
+  # OpenAI - GPT-4 Turbo
+  - model_name: gpt-4-turbo
+    litellm_params:
+      model: gpt-4-turbo
+      api_key: "os.environ/OPENAI_API_KEY"
+
+  # OpenAI - GPT-3.5 Turbo
+  - model_name: gpt-3.5-turbo
+    litellm_params:
+      model: gpt-3.5-turbo
+      api_key: "os.environ/OPENAI_API_KEY"
+
+  # OpenAI - O1 (remove o1-mini - not available with your key)
+  - model_name: o1
+    litellm_params:
+      model: o1
+      api_key: "os.environ/OPENAI_API_KEY"
+
+  # Anthropic Claude - Sonnet 4.5
+  - model_name: claude-sonnet-4.5
+    litellm_params:
+      model: claude-sonnet-4-5-20250929
+      api_key: "os.environ/ANTHROPIC_API_KEY"
+
+  # Anthropic Claude - Haiku 4.5
+  - model_name: claude-haiku-4.5
+    litellm_params:
+      model: claude-haiku-4-5-20251001
+      api_key: "os.environ/ANTHROPIC_API_KEY"
+
+  # Anthropic Claude - Opus 4.1
+  - model_name: claude-opus-4.1
+    litellm_params:
+      model: claude-opus-4-20250514
+      api_key: "os.environ/ANTHROPIC_API_KEY"
+
+  # DeepSeek - V3
+  - model_name: deepseek-v3
+    litellm_params:
+      model: deepseek/deepseek-chat
+      api_key: "os.environ/DEEPSEEK_API_KEY"
+      api_base: "https://api.deepseek.com"
+
+  # DeepSeek - Coder
+  - model_name: deepseek-coder
+    litellm_params:
+      model: deepseek/deepseek-coder
+      api_key: "os.environ/DEEPSEEK_API_KEY"
+      api_base: "https://api.deepseek.com"
