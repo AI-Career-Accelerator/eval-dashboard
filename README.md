@@ -11,6 +11,7 @@ Catch model drift before it kills your product.
 | Day 2      | Auto Evaluation                         | [Twitter thread](https://x.com/AICareerAcc/status/1998294310358515855)         |
 | Day 3      | Persistent logging with SQLAlchemy      | [Twitter thread](https://x.com/AICareerAcc/status/1998688624607723935)   |
 | Day 4      | FastAPI Backend + GitHub Actions CI/CD  | [Twitter thread](https://x.com/AICareerAcc/status/1998926858851901575) |
+| Day 5      | Streamlit Dashboard v1 (3 pages + drift detection) | [Twitter thread](https://x.com/AICareerAcc/status/1999841237365572001) |
 
 ## Project Log
 
@@ -266,9 +267,42 @@ See `GITHUB_ACTIONS_SETUP.md` for detailed setup guide.
 ![GITHUB CICD](docs/images/Day4-1.png)
 ---
 
-#### What's Next (Day 5+)
-- Streamlit dashboard with charts
-- Drift alert webhooks
+### Day 5 – Streamlit Dashboard v1 (Visualization + Drift Detection)
+
+**Goal:** Production-ready dashboard with real-time model monitoring.
+
+**What We Built:**
+- **3-page Streamlit dashboard** with FastAPI integration
+  - **Home**: Accuracy trends over time with automatic drift alerts (🔴 flags drops >3%)
+  - **Run Detail**: Question-level breakdown with judge reasoning, filterable by category, CSV/JSON export
+  - **Model Comparison**: Leaderboard, performance heatmap, cost vs accuracy scatter plot, category winners
+
+**Key Features:**
+- Real-time drift detection with configurable threshold slider
+- Interactive charts (line plots, heatmaps, scatter plots)
+- Export functionality for all data views
+- Recommendation engine for model selection
+- API health monitoring
+
+**Quick Start:**
+```bash
+# Terminal 1 - Start API
+python scripts/start_api.py
+
+# Terminal 2 - Launch Dashboard
+python scripts/start_dashboard.py
+# Opens at http://localhost:8501
+```
+
+**Impact:** From raw data to executive-ready visualizations. Now stakeholders can SEE model drift in real-time.
+
+![Dashboard Screenshots](docs/images/Day5-1.png)
+
+---
+
+#### What's Next (Day 6+)
+- Slack/email webhook alerts
+- Automatic deployment blocking on regression
 
 ---
 

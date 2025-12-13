@@ -48,6 +48,10 @@ def load_dataset(csv_path="data/golden_dataset.csv"):
 
 # Evaluate a single question using the judge
 def evaluate_question(model_name, q):
+    """
+    Evaluate a single question using the specified model.
+    Includes retry logic with exponential backoff for timeout/connection errors.
+    """
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json"
@@ -61,40 +65,86 @@ def evaluate_question(model_name, q):
         "max_tokens": 300
     }
 
-    start_time = time.time()
-    try:
-        r = requests.post(URL, headers=headers, json=data, timeout=60)
-        latency = time.time() - start_time
+    # Retry configuration
+    TIMEOUT = 120  # Increased from 60s to 120s
+    MAX_RETRIES = 2  # Will try up to 3 times total (1 initial + 2 retries)
+    BACKOFF_DELAYS = [5, 10]  # Wait 5s after first failure, 10s after second
 
-        if r.status_code == 200:
-            content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-            # Use the judge module for scoring
-            score, reasoning = score_answer(q['expected_output'], content)
-        else:
-            content = ""
-            score, reasoning = 0.0, f"HTTP {r.status_code}: {r.text[:200]}"
+    last_error = None
+    retry_count = 0
 
-        return {
-            "id": q["id"],
-            "category": q["category"],
-            "input": q["input"],
-            "expected_output": q["expected_output"],
-            "model_response": content,
-            "score": score,
-            "reasoning": reasoning,
-            "latency": latency
-        }
-    except Exception as e:
-        return {
-            "id": q["id"],
-            "category": q["category"],
-            "input": q["input"],
-            "expected_output": q["expected_output"],
-            "model_response": None,
-            "score": 0.0,
-            "reasoning": f"Exception: {str(e)}",
-            "latency": None
-        }
+    for attempt in range(MAX_RETRIES + 1):
+        start_time = time.time()
+        try:
+            r = requests.post(URL, headers=headers, json=data, timeout=TIMEOUT)
+            latency = time.time() - start_time
+
+            if r.status_code == 200:
+                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                # Use the judge module for scoring
+                score, reasoning = score_answer(q['expected_output'], content)
+
+                # Add retry info to reasoning if retried
+                if retry_count > 0:
+                    reasoning = f"[Succeeded after {retry_count} retries] {reasoning}"
+
+                return {
+                    "id": q["id"],
+                    "category": q["category"],
+                    "input": q["input"],
+                    "expected_output": q["expected_output"],
+                    "model_response": content,
+                    "score": score,
+                    "reasoning": reasoning,
+                    "latency": latency
+                }
+            else:
+                # Non-200 status code - don't retry, return immediately
+                content = ""
+                score, reasoning = 0.0, f"HTTP {r.status_code}: {r.text[:200]}"
+                return {
+                    "id": q["id"],
+                    "category": q["category"],
+                    "input": q["input"],
+                    "expected_output": q["expected_output"],
+                    "model_response": content,
+                    "score": score,
+                    "reasoning": reasoning,
+                    "latency": latency
+                }
+
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            # Timeout or connection error - retry with backoff
+            last_error = e
+            retry_count += 1
+
+            if attempt < MAX_RETRIES:
+                delay = BACKOFF_DELAYS[attempt]
+                print(f"[RETRY] {model_name} Q{q['id']} - Attempt {attempt + 1} failed ({type(e).__name__}), retrying in {delay}s...")
+                time.sleep(delay)
+                continue
+            else:
+                # Max retries reached
+                print(f"[FAIL] {model_name} Q{q['id']} - Max retries reached after {retry_count} attempts")
+                break
+
+        except Exception as e:
+            # Other exceptions - don't retry
+            last_error = e
+            print(f"[ERROR] {model_name} Q{q['id']} - Non-retryable error: {type(e).__name__}")
+            break
+
+    # If we get here, all retries failed
+    return {
+        "id": q["id"],
+        "category": q["category"],
+        "input": q["input"],
+        "expected_output": q["expected_output"],
+        "model_response": None,
+        "score": 0.0,
+        "reasoning": f"Failed after {retry_count} retries: {type(last_error).__name__}: {str(last_error)}",
+        "latency": None
+    }
 
 # Evaluate all questions for a single model in parallel
 def evaluate_model_parallel(model_name, questions, max_workers=5):

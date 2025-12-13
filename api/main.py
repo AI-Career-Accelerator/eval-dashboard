@@ -38,7 +38,7 @@ from core.db import (
     Run,
     Evaluation
 )
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, text
 from sqlalchemy.orm import joinedload
 
 
@@ -383,7 +383,7 @@ async def health_check():
     db_connected = False
     try:
         db = SessionLocal()
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db.close()
         db_connected = True
     except Exception:
@@ -392,7 +392,7 @@ async def health_check():
     # Check LiteLLM proxy
     litellm_available = False
     try:
-        response = requests.get("http://127.0.0.1:4000/health", timeout=2)
+        response = requests.get("http://127.0.0.1:4000/health", timeout=10)
         litellm_available = response.status_code == 200
     except Exception:
         pass
