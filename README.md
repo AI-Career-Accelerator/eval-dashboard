@@ -12,6 +12,7 @@ Catch model drift before it kills your product.
 | Day 3      | Persistent logging with SQLAlchemy      | [Twitter thread](https://x.com/AICareerAcc/status/1998688624607723935)   |
 | Day 4      | FastAPI Backend + GitHub Actions CI/CD  | [Twitter thread](https://x.com/AICareerAcc/status/1998926858851901575) |
 | Day 5      | Streamlit Dashboard v1 (3 pages + drift detection) | [Twitter thread](https://x.com/AICareerAcc/status/1999841237365572001) |
+| Day 6      | Drift Detection & Alerts (3 channels: Webhook, Discord, Email) |  [Twitter thread](https://x.com/AICareerAcc/status/2000499529725161605) |
 
 ## Project Log
 
@@ -300,9 +301,47 @@ python scripts/start_dashboard.py
 
 ---
 
-#### What's Next (Day 6+)
-- Slack/email webhook alerts
-- Automatic deployment blocking on regression
+### Day 6 – Drift Detection & Alerts (Automated Model Regression Monitoring)
+
+**Goal:** Transform passive monitoring into proactive alerting. Catch model regressions before users notice them.
+
+---
+
+#### What We Built
+
+**Automated Drift Detection System** with three alert channels:
+
+1. **Generic HTTP Webhook**
+   - POST JSON payload to any URL
+   - Works with Zapier, n8n, Make.com, or custom endpoints
+   - Flexible integration with any service
+
+2. **Discord Webhook**
+   - Rich embedded messages with color coding
+   - Red alerts for drift, green for healthy models
+   - Real-time notifications in your Discord server
+
+3. **Email Alerts (SMTP)**
+   - Professional HTML emails via Gmail/SendGrid
+   - Metrics comparison table
+   - Action items for investigation
+
+**Core Features:**
+
+- ✅ **Automatic drift detection** - Triggers when accuracy drops >5% from best historical run
+- ✅ **Multi-channel alerts** - Send to webhook, Discord, and email simultaneously
+- ✅ **Configurable thresholds** - Set custom drift percentage per deployment
+- ✅ **FastAPI integration** - Automatic alerts after every evaluation run
+- ✅ **Manual testing endpoint** - `POST /test-alerts/{model}` for testing
+- ✅ **Detailed payload** - Includes current accuracy, best accuracy, drift %, latency, cost
+
+![Email Received](docs/images/Day6-2.png)
+
+#### Next Steps (Day 7+)
+
+- Week 1 wrap-up blog post
+- Phoenix/LangSmith tracing integration
+- Multi-modal golden questions
 
 ---
 

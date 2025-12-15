@@ -38,6 +38,7 @@ from core.db import (
     Run,
     Evaluation
 )
+from core.drift_detector import DriftDetector
 from sqlalchemy import func, desc, text
 from sqlalchemy.orm import joinedload
 
@@ -408,6 +409,42 @@ async def health_check():
 
 
 # ============================================================================
+# DRIFT DETECTION & ALERTS
+# ============================================================================
+
+@app.post("/test-alerts/{model_name}")
+async def test_alerts(
+    model_name: str,
+    threshold: float = Query(5.0, ge=0.0, le=100.0, description="Drift threshold percentage")
+):
+    """
+    Test drift detection and alerting for a specific model.
+
+    Manually triggers drift check and sends alerts if drift is detected.
+
+    - **model_name**: Name of the model to check
+    - **threshold**: Drift threshold in percentage (default 5%)
+
+    Returns drift status and alert delivery results.
+    """
+    if model_name not in AVAILABLE_MODELS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid model: {model_name}. Available: {AVAILABLE_MODELS}"
+        )
+
+    try:
+        detector = DriftDetector(threshold_percent=threshold)
+        result = detector.process_run(model_name)
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing drift detection: {str(e)}"
+        )
+
+
+# ============================================================================
 # ROOT ENDPOINT
 # ============================================================================
 
@@ -427,6 +464,7 @@ async def root():
             "get_run_detail": "GET /run/{id}",
             "get_models": "GET /models",
             "get_drift": "GET /drift/{model}",
-            "get_stats": "GET /stats"
+            "get_stats": "GET /stats",
+            "test_alerts": "POST /test-alerts/{model}"
         }
     }

@@ -5,6 +5,10 @@ Demonstrates automatic drift detection with configurable webhooks.
 import os
 import sys
 import json
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

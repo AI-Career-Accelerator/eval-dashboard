@@ -19,6 +19,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.judge import score_answer
 from core.db import save_run
+from core.drift_detector import DriftDetector
 
 
 # LiteLLM proxy configuration
@@ -228,6 +229,18 @@ def run_evaluation_task(
                 try:
                     run_id = save_run(model_name, model_results, model_time)
                     print(f"[JOB {job_id}] Saved to database as run #{run_id}")
+
+                    # Check for drift and send alerts
+                    try:
+                        drift_detector = DriftDetector()
+                        drift_result = drift_detector.process_run(model_name)
+                        if drift_result.get("drift_detected"):
+                            print(f"[ALERT] {model_name} drift detected: {drift_result.get('drift_percentage')}% drop")
+                        else:
+                            print(f"[OK] {model_name} within acceptable range")
+                    except Exception as drift_error:
+                        print(f"[WARNING] Drift detection failed for {model_name}: {drift_error}")
+
                 except Exception as db_error:
                     print(f"[JOB {job_id}] Database save failed for {model_name}: {db_error}")
 
