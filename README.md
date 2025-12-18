@@ -13,6 +13,8 @@ Catch model drift before it kills your product.
 | Day 4      | FastAPI Backend + GitHub Actions CI/CD  | [Twitter thread](https://x.com/AICareerAcc/status/1998926858851901575) |
 | Day 5      | Streamlit Dashboard v1 (3 pages + drift detection) | [Twitter thread](https://x.com/AICareerAcc/status/1999841237365572001) |
 | Day 6      | Drift Detection & Alerts (3 channels: Webhook, Discord, Email) |  [Twitter thread](https://x.com/AICareerAcc/status/2000499529725161605) |
+| Day 7      | Week 1 Wrap-up + Code Optimization              | [Twitter thread](https://x.com/AICareerAcc/status/2000798712088682841)        |
+| Day 8      | Phoenix Integration (OpenTelemetry Tracing)     | [Twitter thread](https://x.com/AICareerAcc/status/2001580756691304807)          |
 
 ## Project Log
 
@@ -337,11 +339,77 @@ python scripts/start_dashboard.py
 
 ![Email Received](docs/images/Day6-2.png)
 
-#### Next Steps (Day 7+)
+---
 
-- Week 1 wrap-up blog post
-- Phoenix/LangSmith tracing integration
-- Multi-modal golden questions
+### Day 8 – Phoenix Integration (OpenTelemetry Tracing & Observability)
+
+**Goal:** Add production-grade LLM observability with Arize Phoenix. Visualize every model call with trace waterfalls.
+
+---
+
+#### What We Built
+
+**Complete Phoenix Observability Stack:**
+
+1. **OpenTelemetry Auto-Instrumentation**
+   - Integrated OpenInference SDK for automatic trace capture
+   - Refactored from `requests` to OpenAI SDK for native instrumentation
+   - Zero-code tracing - captures all LLM calls automatically
+
+2. **Phoenix Server Integration**
+   - Auto-launches Phoenix UI at http://localhost:6006
+   - Configured OTLP exporter for trace collection
+   - Embedded Phoenix dashboard in Streamlit UI
+
+3. **New Streamlit Page: Phoenix Traces**
+   - Live Phoenix UI embedded in dashboard
+   - Trace waterfall visualization
+   - Performance metrics (latency, tokens, cost)
+   - Side-by-side comparison table: Phoenix vs LangSmith
+
+**Core Features:**
+- ✅ **Automatic tracing** - Every OpenAI/LiteLLM call captured
+- ✅ **Waterfall timeline** - See exact latency breakdown
+- ✅ **Prompt/response inspection** - Full visibility into model I/O
+- ✅ **Token & cost tracking** - Real-time usage metrics
+- ✅ **Local-first** - No cloud dependencies, runs on localhost
+- ✅ **Production-ready** - OpenTelemetry standard, works with any OTLP backend
+
+**Tech Highlights:**
+- `arize-phoenix` - Open-source observability platform
+- `openinference-instrumentation-openai` - Auto-instrumentation for OpenAI SDK
+- `opentelemetry-sdk` - Industry-standard tracing
+- Refactored `evaluate.py` and `judge.py` to use OpenAI SDK
+
+**Quick Start:**
+```bash
+# START EVERYTHING (recommended)
+python start_all.py
+
+# RUN EVALUATION
+python core/evaluate.py
+
+# View traces at http://localhost:6006
+```
+
+**Why Phoenix?**
+- **Open Source** - MIT licensed, community-driven
+- **LLM-Native** - Built specifically for AI observability
+- **Framework Agnostic** - Works with OpenAI, LangChain, LlamaIndex, etc.
+- **Zero Lock-in** - Standard OTLP, can switch backends anytime
+
+**Impact:** From black-box API calls to full execution visibility. Now you can debug latency issues, inspect exact prompts, and optimize token usage in real-time.
+![Phoenix](docs/images/Day8-1.png)
+
+**Next:** Add LangSmith integration for side-by-side comparison (Day 9+)
+
+---
+
+#### Next Steps (Day 9+)
+
+- LangSmith integration for dual observability
+- Multi-modal golden questions (image + text)
+- RAG-specific evaluations
 
 ---
 

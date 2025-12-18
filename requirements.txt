@@ -4,3 +4,8 @@ sqlalchemy
 fastapi
 uvicorn[standard]
 pydantic
+openai
+arize-phoenix
+openinference-instrumentation-openai
+opentelemetry-sdk
+opentelemetry-exporter-otlp

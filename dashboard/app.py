@@ -47,6 +47,7 @@ This dashboard provides comprehensive model evaluation tracking and drift detect
 **1. Home** - View accuracy trends over time with drift alerts
 **2. Run Detail** - Explore individual evaluation runs with question-level breakdown
 **3. Model Comparison** - Compare model performance across metrics
+**4. Phoenix Traces** - Visualize LLM execution traces with Phoenix observability
 
 Use the sidebar to navigate between pages.
 """)
@@ -68,7 +69,7 @@ def check_api_status():
 
 api_up, health_data = check_api_status()
 
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     if api_up:
@@ -97,6 +98,20 @@ with col3:
     else:
         st.warning("⚠️ LiteLLM: Unknown")
 
+with col4:
+    # Check Phoenix status
+    try:
+        phoenix_response = requests.get("http://localhost:6006", timeout=2)
+        if phoenix_response.status_code == 200:
+            st.success("✅ Phoenix: Online")
+            st.caption("[View Traces](http://localhost:6006)")
+        else:
+            st.info("ℹ️ Phoenix: Offline")
+            st.caption("Auto-starts with evaluations")
+    except:
+        st.info("ℹ️ Phoenix: Offline")
+        st.caption("Auto-starts with evaluations")
+
 # Quick stats preview
 if api_up:
     st.subheader("📊 Quick Stats")
@@ -124,4 +139,4 @@ if api_up:
         st.warning(f"Could not fetch stats: {str(e)}")
 
 st.divider()
-st.caption("Built in Public - Day 5/14")
+st.caption("Built in Public - Day 8/14 | Now with Phoenix Observability!")

@@ -1,21 +1,42 @@
 import os
+import sys
 import csv
 import json
 import time
-import requests
+import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
-from core.judge import score_answer  # <-- use your real judge
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from openai import OpenAI
+
+# Suppress Windows cleanup warnings (harmless Phoenix temp file cleanup)
+warnings.filterwarnings('ignore', category=ResourceWarning)
+
+# Add project root to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from core.judge import score_answer
 from core.db import init_db, save_run
+from core.phoenix_config import initialize_phoenix
 
 load_dotenv()
 
+# Initialize Phoenix for tracing (auto-instruments OpenAI calls)
+# Set DISABLE_PHOENIX=1 in environment to skip Phoenix initialization
+ENABLE_PHOENIX = os.getenv("DISABLE_PHOENIX") != "1"
+
+if ENABLE_PHOENIX:
+    print("\n[Phoenix] Initializing observability...")
+    phoenix_session = initialize_phoenix(launch_server=True, enable_tracing=True)
+else:
+    print("\n[Phoenix] Disabled (set DISABLE_PHOENIX=1)")
+    phoenix_session = None
+
 # LiteLLM proxy handles actual provider API keys from .env
-# This is just a placeholder for connecting to the local proxy
-API_KEY = "sk-test"
-URL = "http://127.0.0.1:4000/chat/completions"
+# OpenAI SDK configured to use LiteLLM proxy
+client = OpenAI(
+    api_key="sk-test",  # placeholder for LiteLLM proxy
+    base_url="http://127.0.0.1:4000"  # LiteLLM proxy endpoint
+)
 
 # List of models
 MODELS = [
@@ -51,22 +72,10 @@ def evaluate_question(model_name, q):
     """
     Evaluate a single question using the specified model.
     Includes retry logic with exponential backoff for timeout/connection errors.
+    Now uses OpenAI SDK for automatic Phoenix tracing.
     """
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "model": model_name,
-        "messages": [
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": q['input']}
-        ],
-        "max_tokens": 300
-    }
-
     # Retry configuration
-    TIMEOUT = 120  # Increased from 60s to 120s
+    TIMEOUT = 120  # Timeout for API calls
     MAX_RETRIES = 2  # Will try up to 3 times total (1 initial + 2 retries)
     BACKOFF_DELAYS = [5, 10]  # Wait 5s after first failure, 10s after second
 
@@ -76,63 +85,59 @@ def evaluate_question(model_name, q):
     for attempt in range(MAX_RETRIES + 1):
         start_time = time.time()
         try:
-            r = requests.post(URL, headers=headers, json=data, timeout=TIMEOUT)
+            # Use OpenAI SDK - automatically traced by Phoenix
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": q['input']}
+                ],
+                max_tokens=300,
+                timeout=TIMEOUT
+            )
             latency = time.time() - start_time
 
-            if r.status_code == 200:
-                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-                # Use the judge module for scoring
-                score, reasoning = score_answer(q['expected_output'], content)
+            content = response.choices[0].message.content
 
-                # Add retry info to reasoning if retried
-                if retry_count > 0:
-                    reasoning = f"[Succeeded after {retry_count} retries] {reasoning}"
+            # Use the judge module for scoring
+            score, reasoning = score_answer(q['expected_output'], content)
 
-                return {
-                    "id": q["id"],
-                    "category": q["category"],
-                    "input": q["input"],
-                    "expected_output": q["expected_output"],
-                    "model_response": content,
-                    "score": score,
-                    "reasoning": reasoning,
-                    "latency": latency
-                }
-            else:
-                # Non-200 status code - don't retry, return immediately
-                content = ""
-                score, reasoning = 0.0, f"HTTP {r.status_code}: {r.text[:200]}"
-                return {
-                    "id": q["id"],
-                    "category": q["category"],
-                    "input": q["input"],
-                    "expected_output": q["expected_output"],
-                    "model_response": content,
-                    "score": score,
-                    "reasoning": reasoning,
-                    "latency": latency
-                }
+            # Add retry info to reasoning if retried
+            if retry_count > 0:
+                reasoning = f"[Succeeded after {retry_count} retries] {reasoning}"
 
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            # Timeout or connection error - retry with backoff
+            return {
+                "id": q["id"],
+                "category": q["category"],
+                "input": q["input"],
+                "expected_output": q["expected_output"],
+                "model_response": content,
+                "score": score,
+                "reasoning": reasoning,
+                "latency": latency
+            }
+
+        except Exception as e:
+            # Handle timeout and connection errors with retry
+            error_type = type(e).__name__
             last_error = e
-            retry_count += 1
 
-            if attempt < MAX_RETRIES:
+            # Determine if we should retry
+            should_retry = "timeout" in str(e).lower() or "connection" in str(e).lower()
+
+            if should_retry and attempt < MAX_RETRIES:
+                retry_count += 1
                 delay = BACKOFF_DELAYS[attempt]
-                print(f"[RETRY] {model_name} Q{q['id']} - Attempt {attempt + 1} failed ({type(e).__name__}), retrying in {delay}s...")
+                print(f"[RETRY] {model_name} Q{q['id']} - Attempt {attempt + 1} failed ({error_type}), retrying in {delay}s...")
                 time.sleep(delay)
                 continue
             else:
-                # Max retries reached
-                print(f"[FAIL] {model_name} Q{q['id']} - Max retries reached after {retry_count} attempts")
+                # Max retries reached or non-retryable error
+                if retry_count > 0:
+                    print(f"[FAIL] {model_name} Q{q['id']} - Max retries reached after {retry_count} attempts")
+                else:
+                    print(f"[ERROR] {model_name} Q{q['id']} - Non-retryable error: {error_type}")
                 break
-
-        except Exception as e:
-            # Other exceptions - don't retry
-            last_error = e
-            print(f"[ERROR] {model_name} Q{q['id']} - Non-retryable error: {type(e).__name__}")
-            break
 
     # If we get here, all retries failed
     return {
