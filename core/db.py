@@ -56,6 +56,7 @@ class Evaluation(Base):
     judge_reasoning = Column(Text, nullable=True)
     latency = Column(Float, nullable=True)  # Response time in seconds
     cost = Column(Float, default=0.0)  # Estimated cost for this question
+    image_path = Column(String(500), nullable=True)  # Path to image for vision questions
 
     # Relationship back to run
     run = relationship("Run", back_populates="evaluations")
@@ -186,7 +187,8 @@ def save_run(
                 judge_score=result.get("score", 0.0),
                 judge_reasoning=result.get("reasoning", ""),
                 latency=result.get("latency"),
-                cost=estimate_cost(model_name, len(result.get("model_response", "") or ""))
+                cost=estimate_cost(model_name, len(result.get("model_response", "") or "")),
+                image_path=result.get("image_path")
             )
             db.add(eval_record)
 

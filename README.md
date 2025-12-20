@@ -15,6 +15,7 @@ Catch model drift before it kills your product.
 | Day 6      | Drift Detection & Alerts (3 channels: Webhook, Discord, Email) |  [Twitter thread](https://x.com/AICareerAcc/status/2000499529725161605) |
 | Day 7      | Week 1 Wrap-up + Code Optimization              | [Twitter thread](https://x.com/AICareerAcc/status/2000798712088682841)        |
 | Day 8      | Phoenix Integration (OpenTelemetry Tracing)     | [Twitter thread](https://x.com/AICareerAcc/status/2001580756691304807)          |
+| Day 9      | Multi-Modal Evaluation (Vision Support)         | [Twitter thread](https://x.com/AICareerAcc/status/2001580756691304807)  |
 
 ## Project Log
 
@@ -401,15 +402,92 @@ python core/evaluate.py
 **Impact:** From black-box API calls to full execution visibility. Now you can debug latency issues, inspect exact prompts, and optimize token usage in real-time.
 ![Phoenix](docs/images/Day8-1.png)
 
-**Next:** Add LangSmith integration for side-by-side comparison (Day 9+)
+---
+
+### Day 9 – Multi-Modal Evaluation (Vision Support)
+
+**Goal:** Extend evaluation framework to test vision models on image + text tasks. Catch OCR, chart reading, and visual reasoning drift before it reaches production.
 
 ---
 
-#### Next Steps (Day 9+)
+#### What We Built
 
-- LangSmith integration for dual observability
-- Multi-modal golden questions (image + text)
-- RAG-specific evaluations
+**Multi-Modal Dataset (70 Questions Total):**
+
+1. **50 Text-Only Questions** (Existing: Q1-50)
+   - Reasoning, math, coding, hallucination, RAG, instruction-following, safety
+
+2. **20 Vision Questions** (New: Q51-70)
+   - **OCR Tasks** (5 questions): Text extraction from receipts, signs, documents
+   - **Chart Interpretation** (5 questions): Bar charts, line graphs, pie charts
+   - **Visual Reasoning** (5 questions): Counting objects, color detection, spatial understanding
+   - **Diagram Understanding** (5 questions): Flowcharts, system architectures
+
+**Core Features:**
+
+- ✅ **Automated Image Generation** - `scripts/generate_sample_images.py` creates 20 test images with known ground truth
+- ✅ **Base64 Image Encoding** - Seamless conversion of images to API-compatible format
+- ✅ **Vision API Integration** - OpenAI-compatible format works with GPT-4o, Claude Vision, Gemini
+- ✅ **Category-Based Organization** - Images organized by task type (`ocr/`, `charts/`, `visual_reasoning/`, `diagrams/`)
+- ✅ **Database Schema Update** - Added `image_path` column to track vision questions
+- ✅ **Backward Compatible** - Text-only questions continue to work unchanged
+
+**Tech Highlights:**
+
+- PIL/Pillow for programmatic image generation
+- Base64 encoding for image transmission
+- Multi-modal message format: `[{type: "text"}, {type: "image_url"}]`
+- Enhanced CSV schema with optional `image_path` column
+- Automatic vision vs text detection in evaluation pipeline
+
+**Quick Start:**
+
+```bash
+# Generate sample test images (20 images across 4 categories)
+python scripts/generate_sample_images.py
+
+# Quick test: 3 text + 2 vision questions
+python test_multimodal.py
+
+# Full evaluation: 70 questions across all models
+python core/evaluate.py
+
+# View results
+python scripts/start_all.py
+# Dashboard at http://localhost:8501
+```
+
+**Expected Results:**
+
+After running evaluation, you'll see performance breakdown by category:
+
+**Vision-Capable Models:**
+- **GPT-4o**: Strong OCR (90-95%), good chart reading
+- **Claude Sonnet 4.5**: Excellent visual reasoning, diagram understanding
+- **Gemini**: Balanced performance across all vision categories
+
+**Text-Only Models:**
+- Will score 0% on vision questions (expected behavior)
+- Dashboard clearly shows model limitations
+
+**Real Test Results** (gpt-4o-mini on 5 questions):
+```
+Text Questions:
+  Reasoning: 1.0 ✅
+  Math: 1.0 ✅
+  Coding: 1.0 ✅
+
+Vision Questions:
+  OCR (read "Main Street"): 0.9 ✅ (correctly extracted text!)
+  Counting (7 circles): 0.0 ❌ (said 8, caught the error!)
+```
+---
+
+#### Next Steps (Day 10+)
+
+- RAG-specific evaluations (context precision/recall)
+- Multi-turn conversation testing
+- Dashboard polish (dark mode, vision-specific visualizations)
 
 ---
 

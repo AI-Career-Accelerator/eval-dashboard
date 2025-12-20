@@ -4,6 +4,8 @@ import csv
 import json
 import time
 import warnings
+import base64
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -59,13 +61,48 @@ def load_dataset(csv_path="data/golden_dataset.csv"):
     with open(csv_path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
+            # Handle image_path field (may be None or empty string)
+            image_path = row.get("image_path") or ""
+            image_path = image_path.strip() if image_path else None
+
             questions.append({
                 "id": row["id"],
                 "category": row["category"],
                 "input": row["input"],
-                "expected_output": row["expected_output"]
+                "expected_output": row["expected_output"],
+                "image_path": image_path
             })
     return questions
+
+# Helper function to encode images as base64
+def encode_image_to_base64(image_path):
+    """
+    Encode an image file to base64 string.
+    Returns None if file doesn't exist or can't be read.
+    """
+    try:
+        # Handle relative paths from data directory
+        if not os.path.isabs(image_path):
+            image_path = os.path.join("data", image_path)
+
+        with open(image_path, "rb") as image_file:
+            encoded = base64.b64encode(image_file.read()).decode('utf-8')
+
+            # Detect image type from extension
+            ext = Path(image_path).suffix.lower()
+            mime_types = {
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.gif': 'image/gif',
+                '.webp': 'image/webp'
+            }
+            mime_type = mime_types.get(ext, 'image/jpeg')
+
+            return f"data:{mime_type};base64,{encoded}"
+    except Exception as e:
+        print(f"[WARNING] Failed to encode image {image_path}: {e}")
+        return None
 
 # Evaluate a single question using the judge
 def evaluate_question(model_name, q):
@@ -73,6 +110,7 @@ def evaluate_question(model_name, q):
     Evaluate a single question using the specified model.
     Includes retry logic with exponential backoff for timeout/connection errors.
     Now uses OpenAI SDK for automatic Phoenix tracing.
+    Supports multi-modal (vision) questions with images.
     """
     # Retry configuration
     TIMEOUT = 120  # Timeout for API calls
@@ -82,15 +120,58 @@ def evaluate_question(model_name, q):
     last_error = None
     retry_count = 0
 
+    # Check if this is a vision question
+    has_image = q.get('image_path') is not None
+    image_base64 = None
+
+    if has_image:
+        image_base64 = encode_image_to_base64(q['image_path'])
+        if not image_base64:
+            # Image encoding failed - skip this question
+            return {
+                "id": q["id"],
+                "category": q["category"],
+                "input": q["input"],
+                "expected_output": q["expected_output"],
+                "model_response": None,
+                "score": 0.0,
+                "reasoning": f"Image file not found or unreadable: {q['image_path']}",
+                "latency": None,
+                "image_path": q['image_path']
+            }
+
     for attempt in range(MAX_RETRIES + 1):
         start_time = time.time()
         try:
+            # Build message content based on whether we have an image
+            if has_image and image_base64:
+                user_message = {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": q['input']
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": image_base64
+                            }
+                        }
+                    ]
+                }
+            else:
+                user_message = {
+                    "role": "user",
+                    "content": q['input']
+                }
+
             # Use OpenAI SDK - automatically traced by Phoenix
             response = client.chat.completions.create(
                 model=model_name,
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": q['input']}
+                    user_message
                 ],
                 max_tokens=300,
                 timeout=TIMEOUT
@@ -114,7 +195,8 @@ def evaluate_question(model_name, q):
                 "model_response": content,
                 "score": score,
                 "reasoning": reasoning,
-                "latency": latency
+                "latency": latency,
+                "image_path": q.get('image_path')
             }
 
         except Exception as e:
@@ -148,7 +230,8 @@ def evaluate_question(model_name, q):
         "model_response": None,
         "score": 0.0,
         "reasoning": f"Failed after {retry_count} retries: {type(last_error).__name__}: {str(last_error)}",
-        "latency": None
+        "latency": None,
+        "image_path": q.get('image_path')
     }
 
 # Evaluate all questions for a single model in parallel
