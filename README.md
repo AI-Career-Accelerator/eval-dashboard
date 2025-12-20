@@ -15,7 +15,7 @@ Catch model drift before it kills your product.
 | Day 6      | Drift Detection & Alerts (3 channels: Webhook, Discord, Email) |  [Twitter thread](https://x.com/AICareerAcc/status/2000499529725161605) |
 | Day 7      | Week 1 Wrap-up + Code Optimization              | [Twitter thread](https://x.com/AICareerAcc/status/2000798712088682841)        |
 | Day 8      | Phoenix Integration (OpenTelemetry Tracing)     | [Twitter thread](https://x.com/AICareerAcc/status/2001580756691304807)          |
-| Day 9      | Multi-Modal Evaluation (Vision Support)         | [Twitter thread](https://x.com/AICareerAcc/status/2001580756691304807)  |
+| Day 9      | Multi-Modal Evaluation (Vision Support)         | [Twitter thread](https://x.com/AICareerAcc/status/2002209157446054286)  |
 
 ## Project Log
 
