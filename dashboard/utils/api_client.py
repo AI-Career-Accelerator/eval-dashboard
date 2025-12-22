@@ -151,6 +151,63 @@ class APIClient:
 
         return self._post("/run-evaluation", data=data)
 
+    # RAG endpoints
+    def get_rag_runs(
+        self,
+        page: int = 1,
+        page_size: int = 20,
+        model: Optional[str] = None,
+        min_recall: Optional[float] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get paginated list of RAG evaluation runs.
+
+        Args:
+            page: Page number (starts at 1)
+            page_size: Items per page
+            model: Filter by model name
+            min_recall: Filter by minimum recall
+
+        Returns:
+            Dict with 'total', 'page', 'page_size', and 'runs' list
+        """
+        params = {
+            "page": page,
+            "page_size": page_size
+        }
+        if model:
+            params["model"] = model
+        if min_recall is not None:
+            params["min_recall"] = min_recall
+
+        return self._get("/rag-runs", params=params)
+
+    def get_rag_run_detail(self, run_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Get detailed results for a specific RAG run.
+
+        Args:
+            run_id: Unique identifier for the RAG run
+
+        Returns:
+            Dict with 'run', 'evaluations', and 'category_breakdown'
+        """
+        return self._get(f"/rag-run/{run_id}")
+
+    def get_rag_drift(self, model_name: str, threshold: float = 0.05) -> Optional[Dict[str, Any]]:
+        """
+        Analyze RAG drift for a specific model.
+
+        Args:
+            model_name: Name of the model to analyze
+            threshold: Recall drop threshold (default 5%)
+
+        Returns:
+            Dict with RAG drift analysis including latest_run, best_run, has_drifted, recall_drop
+        """
+        params = {"threshold": threshold}
+        return self._get(f"/rag-drift/{model_name}", params=params)
+
 
 # Singleton instance
 @st.cache_resource

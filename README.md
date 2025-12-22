@@ -16,6 +16,7 @@ Catch model drift before it kills your product.
 | Day 7      | Week 1 Wrap-up + Code Optimization              | [Twitter thread](https://x.com/AICareerAcc/status/2000798712088682841)        |
 | Day 8      | Phoenix Integration (OpenTelemetry Tracing)     | [Twitter thread](https://x.com/AICareerAcc/status/2001580756691304807)          |
 | Day 9      | Multi-Modal Evaluation (Vision Support)         | [Twitter thread](https://x.com/AICareerAcc/status/2002209157446054286)  |
+| Day 10     | RAG-Specific Evaluations (Retrieval Quality)    | [Twitter thread](https://x.com/AICareerAcc/status/2002984056078692406) |
 
 ## Project Log
 
@@ -483,12 +484,124 @@ Vision Questions:
 ```
 ---
 
-#### Next Steps (Day 10+)
+---
 
-- RAG-specific evaluations (context precision/recall)
-- Multi-turn conversation testing
-- Dashboard polish (dark mode, vision-specific visualizations)
+### Day 10 – RAG-Specific Evaluations (Retrieval Quality Metrics)
 
+**Goal:** Extend evaluation framework to measure RAG system quality. Distinguish between retrieval failures vs generation failures.
+
+---
+
+#### What We Built
+
+**Complete RAG Evaluation System** with retrieval quality metrics:
+
+1. **Knowledge Base (31 Documents)**
+   - Multi-domain corpus across 10 categories
+   - Technology: AI models, vector databases, embeddings
+   - Science: Physics, chemistry
+   - Geography: Countries, mountains
+   - History: World wars, space exploration
+   - Business: Companies, startups
+   - Sports: Olympics, football
+   - Literature, environment topics
+   - Each chunk labeled with `chunk_id`, `domain`, `topic`
+
+2. **RAG Evaluation Dataset (50 Questions)**
+   - **Single-doc questions** (5): Test basic retrieval
+   - **Multi-doc questions** (5): Require synthesizing multiple chunks
+   - **Semantic questions** (5): Test understanding vs keyword matching
+   - **Numerical questions** (5): Precise fact extraction
+   - **Negation questions** (5): Handle missing information
+   - **Ambiguous questions** (5): Multiple valid interpretations
+   - **Distractor questions** (5): Similar but wrong chunks nearby
+   - **Temporal questions** (5): Date/time-based retrieval
+   - **Comparison questions** (5): Compare entities across chunks
+   - **List questions** (5): Multi-entity extraction
+
+3. **Retrieval System (`core/retrieval.py`)**
+   - Sentence transformers embeddings (`all-MiniLM-L6-v2`)
+   - Cosine similarity search over vector space
+   - Embedding caching for fast re-runs
+   - Top-K retrieval with configurable K
+
+4. **RAG Metrics Computed:**
+   - **Precision@K**: % of retrieved chunks that are relevant
+   - **Recall@K**: % of all relevant chunks that were retrieved
+   - **F1@K**: Harmonic mean of precision & recall
+   - **MRR (Mean Reciprocal Rank)**: 1/position of first relevant chunk
+   - **Similarity Score**: Average cosine similarity of retrieved chunks
+   - **Answer Quality**: Judge LLM score (0-1)
+   - **Grounding Score**: Does answer cite context or hallucinate?
+
+5. **RAG Evaluation Pipeline (`core/rag_evaluate.py`)**
+   - End-to-end RAG evaluation: Retrieval → Generation → Judging
+   - Parallel execution for faster evaluation
+   - Category-wise performance breakdown
+   - JSON export with full traces
+
+**Core Features:**
+
+- ✅ **Retrieval-first evaluation** - Measure if the right chunks are retrieved
+- ✅ **Grounding detection** - Catch hallucinations vs retrieval failures
+- ✅ **Ground truth labels** - Each question tagged with relevant chunk IDs
+- ✅ **Category analysis** - Performance breakdown by question type
+- ✅ **Offline embeddings** - No external dependencies, runs locally
+- ✅ **Production-ready** - Extendable to custom knowledge bases
+
+**Tech Stack:**
+
+- `sentence-transformers` - Text embeddings (384d vectors)
+- `numpy` - Vector similarity computations
+- `openai` SDK - LLM generation & judging
+- Cosine similarity for semantic search
+
+**Quick Start:**
+
+```bash
+# Test retrieval quality (no API calls needed)
+python scripts/test_rag_simple.py
+
+# Full RAG evaluation (requires OPENAI_API_KEY)
+python core/rag_evaluate.py
+python scripts/run_rag_all_models.py
+# Results saved to results/rag/*.json
+```
+
+**Expected Performance:**
+
+After running the retrieval test on 15 questions:
+
+```
+Avg Precision@5: ~25%  (1-2 relevant in top-5)
+Avg Recall@5:    ~93%  (finds almost all relevant chunks)
+Avg F1@5:        ~39%  (balanced metric)
+Avg MRR:         ~0.89 (relevant chunk usually ranked #1)
+```
+
+**Why These Metrics Matter:**
+
+- **High Recall** = Retrieval isn't missing critical information
+- **MRR close to 1.0** = Relevant chunks ranked at the top
+- **Precision@5 = 0.20 for single-doc** = Expected when K=5 (1 relevant / 5 total)
+- **Grounding score** = Detects when LLM hallucinates despite good retrieval
+
+**Real-World Use Cases:**
+
+1. **Diagnose RAG failures:**
+   - Low answer score + High retrieval recall → **LLM generation problem**
+   - Low answer score + Low retrieval recall → **Vector search problem**
+   - High answer score + Low grounding → **Hallucination risk**
+
+2. **Optimize retrieval parameters:**
+   - Test different K values (3, 5, 10)
+   - Compare embedding models (MiniLM vs OpenAI vs Cohere)
+   - Benchmark vector DBs (ChromaDB vs Pinecone vs Weaviate)
+
+3. **Monitor knowledge base drift:**
+   - Track retrieval quality over time
+   - Detect when new documents degrade search
+   - Flag when embeddings need regeneration
 ---
 
 ## Built in Public 🏗️

@@ -25,7 +25,12 @@ from api.models import (
     ModelStats,
     DriftAnalysis,
     DashboardStats,
-    HealthResponse
+    HealthResponse,
+    RAGRunSummary,
+    RAGRunDetail,
+    RAGRunListResponse,
+    RAGEvaluationDetail,
+    RAGDriftAnalysis
 )
 from api.background import run_evaluation_task
 from core.db import (
@@ -34,9 +39,15 @@ from core.db import (
     get_recent_runs,
     get_runs_by_model,
     get_drift_analysis,
+    get_rag_run_by_id,
+    get_recent_rag_runs,
+    get_rag_runs_by_model,
+    get_rag_drift_analysis,
     SessionLocal,
     Run,
-    Evaluation
+    Evaluation,
+    RAGRun,
+    RAGEvaluation
 )
 from core.drift_detector import DriftDetector
 from sqlalchemy import func, desc, text
@@ -445,6 +456,149 @@ async def test_alerts(
 
 
 # ============================================================================
+# RAG ENDPOINTS
+# ============================================================================
+
+@app.get("/rag-runs", response_model=RAGRunListResponse)
+async def get_rag_runs(
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+    model: Optional[str] = Query(None, description="Filter by model name"),
+    min_recall: Optional[float] = Query(None, ge=0.0, le=1.0, description="Minimum recall threshold")
+):
+    """
+    Get paginated list of RAG evaluation runs with optional filters.
+
+    - **page**: Page number (starts at 1)
+    - **page_size**: Number of results per page (max 100)
+    - **model**: Filter by specific model name
+    - **min_recall**: Filter runs with recall >= this value
+    """
+    db = SessionLocal()
+    try:
+        # Build query
+        query = db.query(RAGRun)
+
+        # Apply filters
+        if model:
+            query = query.filter(RAGRun.model_name == model)
+        if min_recall is not None:
+            query = query.filter(RAGRun.avg_recall >= min_recall)
+
+        # Get total count
+        total = query.count()
+
+        # Apply pagination
+        offset = (page - 1) * page_size
+        runs = query.order_by(desc(RAGRun.timestamp)).offset(offset).limit(page_size).all()
+
+        return RAGRunListResponse(
+            total=total,
+            page=page,
+            page_size=page_size,
+            runs=[RAGRunSummary.model_validate(run) for run in runs]
+        )
+
+    finally:
+        db.close()
+
+
+@app.get("/rag-run/{run_id}", response_model=RAGRunDetail)
+async def get_rag_run_detail(run_id: int):
+    """
+    Get detailed results for a specific RAG run including all evaluations.
+
+    - **run_id**: Unique identifier for the RAG run
+
+    Returns full RAG run details with per-question breakdown and category analysis.
+    """
+    run = get_rag_run_by_id(run_id)
+
+    if not run:
+        raise HTTPException(status_code=404, detail=f"RAG run {run_id} not found")
+
+    # Calculate category breakdown
+    category_breakdown = {}
+    for eval in run.evaluations:
+        cat = eval.category
+        if cat not in category_breakdown:
+            category_breakdown[cat] = {
+                "total_questions": 0,
+                "avg_precision": 0.0,
+                "avg_recall": 0.0,
+                "avg_f1": 0.0,
+                "avg_answer_score": 0.0,
+                "avg_grounding_score": 0.0,
+                "precisions": [],
+                "recalls": [],
+                "f1s": [],
+                "answer_scores": [],
+                "grounding_scores": []
+            }
+        category_breakdown[cat]["total_questions"] += 1
+        category_breakdown[cat]["precisions"].append(eval.retrieval_precision)
+        category_breakdown[cat]["recalls"].append(eval.retrieval_recall)
+        category_breakdown[cat]["f1s"].append(eval.retrieval_f1)
+        category_breakdown[cat]["answer_scores"].append(eval.answer_score)
+        category_breakdown[cat]["grounding_scores"].append(eval.grounding_score)
+
+    # Calculate averages
+    for cat, data in category_breakdown.items():
+        data["avg_precision"] = sum(data["precisions"]) / len(data["precisions"]) if data["precisions"] else 0.0
+        data["avg_recall"] = sum(data["recalls"]) / len(data["recalls"]) if data["recalls"] else 0.0
+        data["avg_f1"] = sum(data["f1s"]) / len(data["f1s"]) if data["f1s"] else 0.0
+        data["avg_answer_score"] = sum(data["answer_scores"]) / len(data["answer_scores"]) if data["answer_scores"] else 0.0
+        data["avg_grounding_score"] = sum(data["grounding_scores"]) / len(data["grounding_scores"]) if data["grounding_scores"] else 0.0
+        # Remove raw lists from response
+        del data["precisions"]
+        del data["recalls"]
+        del data["f1s"]
+        del data["answer_scores"]
+        del data["grounding_scores"]
+
+    return RAGRunDetail(
+        run=RAGRunSummary.model_validate(run),
+        evaluations=[RAGEvaluationDetail.model_validate(e) for e in run.evaluations],
+        category_breakdown=category_breakdown
+    )
+
+
+@app.get("/rag-drift/{model_name}", response_model=RAGDriftAnalysis)
+async def get_rag_drift(
+    model_name: str,
+    threshold: float = Query(0.05, ge=0.0, le=1.0, description="Recall drop threshold")
+):
+    """
+    Analyze RAG drift for a specific model.
+
+    Compares latest run to best historical run to detect recall degradation.
+
+    - **model_name**: Name of the model to analyze
+    - **threshold**: Recall drop threshold (default 5%)
+
+    Returns drift status and comparison between latest and best runs.
+    """
+    latest_run, best_run, has_drifted = get_rag_drift_analysis(model_name, threshold)
+
+    if not latest_run:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No RAG evaluation runs found for model: {model_name}"
+        )
+
+    recall_drop = (best_run.avg_recall - latest_run.avg_recall) if best_run else 0.0
+
+    return RAGDriftAnalysis(
+        model_name=model_name,
+        latest_run=RAGRunSummary.model_validate(latest_run) if latest_run else None,
+        best_run=RAGRunSummary.model_validate(best_run) if best_run else None,
+        has_drifted=has_drifted,
+        recall_drop=recall_drop,
+        threshold=threshold
+    )
+
+
+# ============================================================================
 # ROOT ENDPOINT
 # ============================================================================
 
@@ -465,6 +619,9 @@ async def root():
             "get_models": "GET /models",
             "get_drift": "GET /drift/{model}",
             "get_stats": "GET /stats",
-            "test_alerts": "POST /test-alerts/{model}"
+            "test_alerts": "POST /test-alerts/{model}",
+            "rag_runs": "GET /rag-runs",
+            "rag_run_detail": "GET /rag-run/{id}",
+            "rag_drift": "GET /rag-drift/{model}"
         }
     }

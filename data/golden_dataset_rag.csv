@@ -1,0 +1,60 @@
+id,category,input,expected_output,relevant_chunk_ids,notes
+71,rag_single_doc,What company was founded by Steve Jobs?,Apple Inc.,"[19]",Single relevant document
+72,rag_single_doc,What is the context window size of Claude 3.5 Sonnet?,"200,000 tokens","[1]",Specific fact from one document
+73,rag_single_doc,What is the speed of light in a vacuum?,"299,792,458 meters per second","[7]",Precise scientific fact
+74,rag_single_doc,When did World War II begin?,September 1, 1939,"[15]",Historical date
+75,rag_single_doc,What is the capital of France?,Paris,"[11]",Geography fact
+
+76,rag_multi_doc,Compare the context window sizes of GPT-4 and Gemini 1.5 Pro.,"GPT-4 has limited context while Gemini 1.5 Pro has 2 million tokens","[0,2]",Requires synthesis from multiple chunks
+77,rag_multi_doc,What are two examples of vector databases?,"ChromaDB and Pinecone","[3,4]",Both chunks equally relevant
+78,rag_multi_doc,Name the two embedding models mentioned in the knowledge base.,All-MiniLM-L6-v2 and text-embedding-3-small,"[5,6]",Requires both embedding chunks
+79,rag_multi_doc,What are the two highest mountains mentioned?,"Mount Everest (8,848.86m) and K2 (8,611m)","[13,14]",Comparative retrieval
+80,rag_multi_doc,Compare World War I and World War II durations.,WWI lasted 1914-1918 (4 years); WWII lasted 1939-1945 (6 years),"[15,16]",Date comparison
+
+81,rag_semantic,What AI model is best for coding tasks?,Claude 3.5 Sonnet,"[1]",Requires understanding semantic meaning
+82,rag_semantic,Which vector database can run locally?,"ChromaDB","[3]",Semantic inference from description
+83,rag_semantic,Who was the first person on the Moon?,Neil Armstrong,"[17]",Named entity recognition
+84,rag_semantic,What is the Olympic motto?,"Citius, Altius, Fortius (Faster, Higher, Stronger)","[23]",Quote extraction
+85,rag_semantic,What startup accelerator funded Airbnb?,Y Combinator,"[21]",Entity relationship
+
+86,rag_numerical,How many parameters does GPT-4 have?,1.76 trillion,"[0]",Numerical fact extraction
+87,rag_numerical,What is the height of Mount Everest in meters?,"8,848.86 meters","[13]",Precise measurement
+88,rag_numerical,How many Olympic medals does Michael Phelps have?,28 medals (23 gold),"[24]",Numerical data
+89,rag_numerical,What year was Y Combinator founded?,2005,"[21]",Date extraction
+90,rag_numerical,How many Space Shuttle missions were completed?,135 missions,"[18]",Historical count
+
+91,rag_negation,What is the temperature of the Sun's core?,"Not mentioned in knowledge base","[]",Question with no relevant chunks
+92,rag_negation,Who invented the telephone?,"Not mentioned in knowledge base","[]",Missing information test
+93,rag_negation,What is the population of Brazil?,"Not mentioned in knowledge base","[]",Retrieval should return nothing
+94,rag_negation,When was the first iPhone released?,"Not mentioned (though Apple is mentioned)","[]",Partial information trap
+95,rag_negation,What is the chemical formula for sulfuric acid?,"Not mentioned in knowledge base","[]",Missing scientific fact
+
+96,rag_ambiguous,What are the components of water?,Two hydrogen atoms and one oxygen atom (H2O),"[9]",Could match chemistry or general science
+97,rag_ambiguous,What happened in 1969?,Apollo 11 landed on the Moon,"[17]",Date-based retrieval
+98,rag_ambiguous,What company provides cloud services?,Amazon (AWS),"[20]",Could match multiple business chunks
+99,rag_ambiguous,What is special about ice?,It floats because water expands when it freezes,"[9]",Property-based question
+100,rag_ambiguous,What is the most-watched sporting event?,FIFA World Cup,"[25]",Superlative question
+
+101,rag_distractor,How many tokens can Gemini 1.5 Pro process?,2 million tokens,"[2]","Distractors: GPT-4, Claude chunks nearby"
+102,rag_distractor,What is the freezing point of water?,0°C,"[9]","Distractor: CO2 sublimation temperature (-78.5°C)"
+103,rag_distractor,When was the Apollo 11 Moon landing?,July 20, 1969,"[17]",Distractor: Space Shuttle program dates
+104,rag_distractor,Who founded Amazon?,Jeff Bezos,"[20]",Distractor: Steve Jobs/Apple
+105,rag_distractor,What is K2's height?,"8,611 meters","[14]","Distractor: Everest (8,848m)"
+
+106,rag_temporal,What year did the modern Olympics start?,1896,"[23]",Temporal fact
+107,rag_temporal,When did the Space Shuttle program end?,2011,"[18]",End date extraction
+108,rag_temporal,When was the Paris Agreement adopted?,2015,"[29]",International agreement date
+109,rag_temporal,When did Apple become a trillion-dollar company?,2018,"[19]",Milestone date
+110,rag_temporal,What year was '1984' published?,1949,"[27]",Publication date
+
+111,rag_comparison,Which is more dangerous to climb: K2 or Everest?,K2 is more difficult and dangerous,"[13,14]",Comparative reasoning
+112,rag_comparison,Who has more Ballon d'Or awards: Ronaldo or Messi?,Messi (8 vs 5),"[26]",Statistical comparison
+113,rag_comparison,Which embedding model has higher dimensions?,text-embedding-3-small (1536 vs 384),"[5,6]",Technical comparison
+114,rag_comparison,Which World War lasted longer?,World War II (6 years vs 4 years),"[15,16]",Duration comparison
+115,rag_comparison,Which company reached trillion-dollar valuation first?,Apple (2018 mentioned),"[19,20]",Timeline comparison
+
+116,rag_list,Name three AI models mentioned.,"GPT-4, Claude, Gemini","[0,1,2]",Multi-entity extraction
+117,rag_list,What are the four main islands of Japan?,"Honshu, Hokkaido, Kyushu, Shikoku","[12]",List extraction
+118,rag_list,Name the five Space Shuttles.,"Columbia, Challenger, Discovery, Atlantis, Endeavour","[18]",Complete list recall
+119,rag_list,What are three types of renewable energy?,"Solar, wind, hydroelectric","[30]",Partial list acceptable
+120,rag_list,Name two companies Y Combinator funded.,"Airbnb, Dropbox, Stripe, or Reddit (any two)","[21]",Flexible list matching
