@@ -18,6 +18,7 @@ Catch model drift before it kills your product.
 | Day 9      | Multi-Modal Evaluation (Vision Support)         | [Twitter thread](https://x.com/AICareerAcc/status/2002209157446054286)  |
 | Day 10     | RAG-Specific Evaluations (Retrieval Quality)    | [Twitter thread](https://x.com/AICareerAcc/status/2002984056078692406) |
 | Day 11     | Dashboard Polish (Dark Mode, PDF Export, Cost Calculator) | [Twitter thread](https://x.com/AICareerAcc/status/2003685447420289532) |
+| Day 13     | Public Leaderboard (Time-Based Rankings, Champion Highlights) | Coming soon |
 
 ## Project Log
 
@@ -483,7 +484,6 @@ Vision Questions:
   OCR (read "Main Street"): 0.9 ✅ (correctly extracted text!)
   Counting (7 circles): 0.0 ❌ (said 8, caught the error!)
 ```
----
 
 ---
 
@@ -669,6 +669,57 @@ python scripts/start_all.py
 # 3. Adjust "Evaluations per day" slider to see cost projections
 # 4. Click "📄 Export PDF" button to generate executive report
 # 5. View dashboard on mobile device - fully responsive!
+```
+---
+
+### Day 13 – Public Leaderboard (Time-Based Rankings & Social Sharing)
+
+**Goal:** Transform Model Comparison into a public-ready leaderboard with time-based filtering and social sharing capabilities.
+
+---
+
+#### What We Built
+
+**Public-Ready Leaderboard Enhancements:**
+
+1. **📅 Time-Based Filtering**
+   - **Last 7 Days** - Weekly champion rankings
+   - **Last 30 Days** - Monthly performance leaders
+   - **All Time** - Complete historical leaderboard
+   - Dynamic API filtering for accurate time-based metrics
+   - Separate champion badges per time period
+
+2. **🏆 Champion Highlights**
+   - Prominent champion card with medal badges
+   - Automatic "Weekly/Monthly/All-Time Champion" designation
+   - Top 3 models get medal emojis (🥇🥈🥉) in rankings
+   - Champion metrics showcase: Accuracy, Cost, Latency
+   - Period-specific leaderboard labels
+
+3. **🐦 Social Sharing Integration**
+   - One-click "Share on Twitter" button
+   - Pre-filled tweet with champion stats
+   - Twitter intent URL with formatted metrics
+   - Automatic URL encoding for proper formatting
+   - Encourages community engagement and viral growth
+
+4. **🎯 Enhanced UX**
+   - Clear time period indicators on leaderboard
+   - Visual distinction for top performers
+   - Medal rankings for top 3 models
+   - Responsive filtering in sidebar
+
+**Quick Start:**
+
+```bash
+# Start the enhanced dashboard
+python scripts/start_all.py
+
+# Try it out:
+# 1. Navigate to Model Comparison page
+# 2. Select "Last 7 Days" in sidebar to see weekly champion
+# 3. Click "Share on Twitter" to post champion stats
+# 4. Switch between time periods to see different leaders
 ```
 
 ## Built in Public 🏗️

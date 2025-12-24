@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import sys
 import os
+import urllib.parse
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -29,9 +30,28 @@ st.divider()
 # Get API client
 api = get_api_client()
 
-# Fetch model statistics
+# Sidebar - Time Filter (needs to be defined BEFORE API call)
+st.sidebar.header("🕐 Time Period")
+
+# Time filter
+time_filter_options = {
+    "All Time": None,
+    "Last 7 Days": 7,
+    "Last 30 Days": 30
+}
+
+time_filter = st.sidebar.selectbox(
+    "Show results from",
+    options=list(time_filter_options.keys()),
+    index=0,
+    help="Filter model statistics by time period"
+)
+
+selected_days = time_filter_options[time_filter]
+
+# Fetch model statistics with time filter
 with st.spinner("Loading model statistics..."):
-    models_data = api.get_models()
+    models_data = api.get_models(days=selected_days)
 
 if not models_data or not models_data.get("models"):
     st.warning("No model data found. Run an evaluation first!")
@@ -48,7 +68,8 @@ if models_df.empty:
     st.warning("No completed evaluation runs found.")
     st.stop()
 
-# Sidebar - Filters and Options
+# Sidebar - Display Options
+st.sidebar.divider()
 st.sidebar.header("Display Options")
 
 # Sort by option
@@ -94,6 +115,14 @@ filtered_df = models_df[models_df['model_name'].isin(selected_models)].copy()
 # Leaderboard Section
 st.header("🏆 Model Leaderboard")
 
+# Show time period badge
+if time_filter == "Last 7 Days":
+    st.caption("📅 **Weekly Leaderboard** - Rankings from the past 7 days")
+elif time_filter == "Last 30 Days":
+    st.caption("📅 **Monthly Leaderboard** - Rankings from the past 30 days")
+else:
+    st.caption("📅 **All-Time Leaderboard** - Complete historical rankings")
+
 # Create display DataFrame
 display_df = filtered_df[[
     'model_name',
@@ -123,8 +152,46 @@ display_df = display_df.rename(columns={
     'total_runs': 'Total Runs'
 })
 
-# Add ranking
-display_df.insert(0, 'Rank', range(1, len(display_df) + 1))
+# Add ranking with medals for top 3
+ranks = []
+for i in range(1, len(display_df) + 1):
+    if i == 1:
+        ranks.append("🥇 1")
+    elif i == 2:
+        ranks.append("🥈 2")
+    elif i == 3:
+        ranks.append("🥉 3")
+    else:
+        ranks.append(str(i))
+
+display_df.insert(0, 'Rank', ranks)
+
+# Highlight the champion
+if not filtered_df.empty:
+    champion = filtered_df.iloc[0]
+    champion_name = champion['model_name']
+    champion_accuracy = champion['avg_accuracy']
+    champion_cost = champion['avg_cost']
+    champion_latency = champion['avg_latency']
+
+    # Champion card
+    period_label = "Weekly" if time_filter == "Last 7 Days" else ("Monthly" if time_filter == "Last 30 Days" else "All-Time")
+    st.success(f"**🏆 {period_label} Champion: {champion_name}**")
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Accuracy", f"{champion_accuracy:.1%}")
+    with col2:
+        st.metric("Avg Cost", f"${champion_cost:.4f}")
+    with col3:
+        st.metric("Avg Latency", f"{champion_latency:.2f}s")
+    with col4:
+        # Shareable tweet button
+        tweet_text = f"🏆 {period_label} AI Model Champion: {champion_name}\n\n✅ Accuracy: {champion_accuracy:.1%}\n💰 Cost: ${champion_cost:.4f}\n⚡ Latency: {champion_latency:.2f}s\n\nTracked with my eval dashboard 📊"
+        tweet_url = f"https://twitter.com/intent/tweet?text={urllib.parse.quote(tweet_text)}"
+        st.markdown(f"[🐦 Share on Twitter]({tweet_url})", unsafe_allow_html=True)
+
+st.divider()
 
 # Display table with custom styling
 st.dataframe(

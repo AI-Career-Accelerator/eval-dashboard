@@ -233,21 +233,34 @@ async def get_run_detail(run_id: int):
 # ============================================================================
 
 @app.get("/models", response_model=ModelsResponse)
-async def get_models():
+async def get_models(
+    days: Optional[int] = Query(None, ge=1, description="Filter runs from last N days (e.g., 7, 30). None = all time")
+):
     """
     Get statistics for all available models.
 
     Returns aggregate metrics across all historical runs for each model.
+
+    - **days**: Optional filter to only include runs from the last N days
     """
     db = SessionLocal()
     try:
+        from datetime import timedelta
+
         model_stats = []
 
         for model_name in AVAILABLE_MODELS:
-            runs = db.query(Run).filter(Run.model_name == model_name).all()
+            query = db.query(Run).filter(Run.model_name == model_name)
+
+            # Apply time filter if specified
+            if days:
+                cutoff_date = datetime.utcnow() - timedelta(days=days)
+                query = query.filter(Run.timestamp >= cutoff_date)
+
+            runs = query.all()
 
             if not runs:
-                # Model hasn't been evaluated yet
+                # Model hasn't been evaluated yet (or not in time period)
                 model_stats.append(ModelStats(
                     model_name=model_name,
                     total_runs=0,

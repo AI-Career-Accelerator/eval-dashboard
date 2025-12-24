@@ -99,14 +99,20 @@ class APIClient:
         return self._get(f"/run/{run_id}")
 
     # Models endpoints
-    def get_models(self) -> Optional[Dict[str, Any]]:
+    def get_models(self, days: Optional[int] = None) -> Optional[Dict[str, Any]]:
         """
         Get statistics for all available models.
+
+        Args:
+            days: Optional filter to only include runs from the last N days (e.g., 7, 30)
 
         Returns:
             Dict with 'models' list containing ModelStats for each model
         """
-        return self._get("/models")
+        params = {}
+        if days:
+            params["days"] = days
+        return self._get("/models", params=params if params else None)
 
     # Drift endpoints
     def get_drift(self, model_name: str, threshold: float = 0.05) -> Optional[Dict[str, Any]]:

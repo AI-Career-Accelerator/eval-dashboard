@@ -129,7 +129,7 @@ if api_up:
         st.warning(f"Could not fetch stats: {str(e)}")
 
 st.divider()
-st.caption("Built in Public - Day 11/14 | Dashboard Polish + Dark Mode!")
+st.caption("Built in Public - Day 13/14 | Public Leaderboard with Time-Based Rankings!")
 
 # Render theme toggle in sidebar
 render_theme_toggle()
