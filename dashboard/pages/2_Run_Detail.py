@@ -11,9 +11,15 @@ import os
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.api_client import get_api_client
+from utils.theme_manager import apply_theme, render_theme_toggle, get_plotly_template, apply_plot_theme
+from utils.pdf_generator import generate_run_detail_pdf
+from datetime import datetime
 
 # Page config
 st.set_page_config(page_title="Run Detail - Eval Dashboard", page_icon="🔍", layout="wide")
+
+# Apply theme
+apply_theme()
 
 st.title("🔍 Run Detail Explorer")
 st.markdown("Drill down into individual evaluation runs and analyze question-level performance")
@@ -137,7 +143,8 @@ if category_breakdown:
             showlegend=False,
             height=400
         )
-        st.plotly_chart(fig, use_container_width=True)
+        apply_plot_theme(fig)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
     with table_col:
         # Category stats table
@@ -277,3 +284,40 @@ with export_col2:
     )
 
 st.caption("💡 Tip: Use filters in the sidebar to focus on specific categories or score ranges")
+
+# PDF Export for selected run
+st.divider()
+st.subheader("📄 Export Run Detail Report")
+
+col1, col2 = st.columns([2, 1])
+with col1:
+    st.markdown(f"Generate a detailed PDF report for Run #{selected_run_id}")
+
+with col2:
+    # Button to trigger PDF generation
+    if st.button("📄 Generate PDF", type="primary", use_container_width=True, key="gen_pdf_run"):
+        try:
+            with st.spinner("Generating PDF report..."):
+                pdf_bytes = generate_run_detail_pdf(
+                    run_detail['run'],
+                    filtered_eval_df,
+                    run_detail.get('category_breakdown', {})
+                )
+
+            st.success("✅ PDF generated successfully!")
+
+            # Offer download button
+            st.download_button(
+                label="⬇️ Download Run Detail PDF",
+                data=pdf_bytes,
+                file_name=f"run_{selected_run_id}_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        except Exception as e:
+            st.error(f"❌ Failed to generate PDF: {str(e)}")
+            import traceback
+            st.code(traceback.format_exc())
+
+# Render theme toggle
+render_theme_toggle()

@@ -12,9 +12,15 @@ import os
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.api_client import get_api_client
+from utils.theme_manager import apply_theme, render_theme_toggle, get_plotly_template, apply_plot_theme
+from utils.pdf_generator import generate_model_comparison_pdf
+from datetime import datetime
 
 # Page config
 st.set_page_config(page_title="Model Comparison - Eval Dashboard", page_icon="⚖️", layout="wide")
+
+# Apply theme
+apply_theme()
 
 st.title("⚖️ Model Comparison Matrix")
 st.markdown("Compare model performance across accuracy, cost, and latency metrics")
@@ -169,7 +175,9 @@ fig_heatmap.update_layout(
     yaxis_title="Model"
 )
 
-st.plotly_chart(fig_heatmap, use_container_width=True)
+apply_plot_theme(fig_heatmap)
+
+st.plotly_chart(fig_heatmap, use_container_width=True, theme=None)
 
 st.divider()
 
@@ -202,15 +210,8 @@ fig_scatter.update_layout(
     height=500,
     showlegend=True
 )
-
-# Add quadrant lines
-median_cost = filtered_df['avg_cost'].median()
-median_accuracy = filtered_df['avg_accuracy'].median()
-
-fig_scatter.add_vline(x=median_cost, line_dash="dash", line_color="gray", opacity=0.5)
-fig_scatter.add_hline(y=median_accuracy, line_dash="dash", line_color="gray", opacity=0.5)
-
-st.plotly_chart(fig_scatter, use_container_width=True)
+apply_plot_theme(fig_scatter)
+st.plotly_chart(fig_scatter, use_container_width=True, theme=None)
 
 st.caption("💡 **Sweet Spot**: Top-right quadrant = High accuracy + Low cost")
 
@@ -254,8 +255,10 @@ with metrics_tab1:
         barmode='group',
         height=400
     )
+    
+    apply_plot_theme(fig_acc)
 
-    st.plotly_chart(fig_acc, use_container_width=True)
+    st.plotly_chart(fig_acc, use_container_width=True, theme=None)
 
 with metrics_tab2:
     # Cost comparison
@@ -270,7 +273,8 @@ with metrics_tab2:
     )
 
     fig_cost.update_layout(height=400)
-    st.plotly_chart(fig_cost, use_container_width=True)
+    apply_plot_theme(fig_cost)
+    st.plotly_chart(fig_cost, use_container_width=True, theme=None)
 
 with metrics_tab3:
     # Latency comparison
@@ -285,7 +289,124 @@ with metrics_tab3:
     )
 
     fig_latency.update_layout(height=400)
-    st.plotly_chart(fig_latency, use_container_width=True)
+    apply_plot_theme(fig_latency)
+    st.plotly_chart(fig_latency, use_container_width=True, theme=None)
+
+st.divider()
+
+# Cost Savings Calculator
+st.header("💰 Cost Savings Calculator")
+st.markdown("**Calculate potential savings by choosing the optimal model vs GPT-4o baseline**")
+
+# Find GPT-4o baseline (or closest match)
+gpt4o_baseline = filtered_df[filtered_df['model_name'].str.contains('gpt-4o', case=False, na=False)]
+if not gpt4o_baseline.empty:
+    baseline_cost = gpt4o_baseline.iloc[0]['avg_cost']
+    baseline_model = gpt4o_baseline.iloc[0]['model_name']
+else:
+    # Fallback: use the most expensive model as baseline
+    baseline_cost = filtered_df['avg_cost'].max()
+    baseline_model = filtered_df.loc[filtered_df['avg_cost'].idxmax(), 'model_name']
+
+st.caption(f"Using **{baseline_model}** as baseline (${baseline_cost:.4f} per evaluation)")
+
+# Usage projections
+col1, col2 = st.columns([1, 2])
+
+with col1:
+    st.subheader("📊 Usage Projections")
+
+    # User inputs for projections
+    evals_per_day = st.slider(
+        "Evaluations per day",
+        min_value=10,
+        max_value=10000,
+        value=100,
+        step=10,
+        help="Estimated number of model evaluations per day in production"
+    )
+
+    selected_model_for_calc = st.selectbox(
+        "Compare model",
+        options=selected_models,
+        index=0,
+        help="Model to compare against baseline"
+    )
+
+with col2:
+    st.subheader("💸 Projected Savings")
+
+    # Calculate savings
+    selected_model_cost = filtered_df[filtered_df['model_name'] == selected_model_for_calc].iloc[0]['avg_cost']
+    cost_diff_per_eval = baseline_cost - selected_model_cost
+
+    # Calculate projections
+    daily_savings = cost_diff_per_eval * evals_per_day
+    weekly_savings = daily_savings * 7
+    monthly_savings = daily_savings * 30
+    annual_savings = daily_savings * 365
+
+    # Display metrics
+    metric_cols = st.columns(4)
+
+    with metric_cols[0]:
+        st.metric(
+            "Daily Savings",
+            f"${abs(daily_savings):.2f}",
+            delta=f"${cost_diff_per_eval:.4f} per eval",
+            delta_color="normal" if daily_savings >= 0 else "inverse"
+        )
+
+    with metric_cols[1]:
+        st.metric(
+            "Weekly Savings",
+            f"${abs(weekly_savings):.2f}",
+            delta=None
+        )
+
+    with metric_cols[2]:
+        st.metric(
+            "Monthly Savings",
+            f"${abs(monthly_savings):.2f}",
+            delta=None
+        )
+
+    with metric_cols[3]:
+        st.metric(
+            "Annual Savings",
+            f"${abs(annual_savings):,.2f}",
+            delta=None
+        )
+
+    # Summary message
+    if daily_savings > 0:
+        st.success(
+            f"✅ **Switching to {selected_model_for_calc} saves ${monthly_savings:.2f}/month** "
+            f"(${annual_savings:,.2f}/year) at {evals_per_day} evals/day"
+        )
+
+        # ROI comparison
+        accuracy_diff = (
+            filtered_df[filtered_df['model_name'] == selected_model_for_calc].iloc[0]['avg_accuracy'] -
+            filtered_df[filtered_df['model_name'] == baseline_model].iloc[0]['avg_accuracy']
+        )
+
+        if accuracy_diff >= 0:
+            st.info(
+                f"🎯 **Bonus:** {selected_model_for_calc} is also "
+                f"{abs(accuracy_diff):.1%} {'more' if accuracy_diff > 0 else 'equally'} accurate!"
+            )
+        else:
+            st.warning(
+                f"⚠️ **Trade-off:** {selected_model_for_calc} is "
+                f"{abs(accuracy_diff):.1%} less accurate. Evaluate if acceptable for your use case."
+            )
+    elif daily_savings < 0:
+        st.error(
+            f"❌ {selected_model_for_calc} costs ${abs(monthly_savings):.2f}/month MORE than {baseline_model}"
+        )
+    else:
+        st.info(f"ℹ️ Both models have identical costs")
 
 st.divider()
 
@@ -340,3 +461,36 @@ st.info(
 )
 
 st.caption("💡 Tip: Use the sidebar to adjust sorting and filtering options")
+
+# PDF Export - Generate and offer download
+st.divider()
+st.subheader("📄 Export Executive Report")
+
+col1, col2 = st.columns([2, 1])
+with col1:
+    st.markdown("Generate a professional PDF report with charts, tables, and recommendations.")
+
+with col2:
+    # Button to trigger PDF generation
+    if st.button("📄 Generate PDF", type="primary", use_container_width=True):
+        try:
+            with st.spinner("Generating PDF report..."):
+                pdf_bytes = generate_model_comparison_pdf(filtered_df)
+
+            st.success("✅ PDF generated successfully!")
+
+            # Offer download button
+            st.download_button(
+                label="⬇️ Download PDF Report",
+                data=pdf_bytes,
+                file_name=f"model_comparison_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        except Exception as e:
+            st.error(f"❌ Failed to generate PDF: {str(e)}")
+            import traceback
+            st.code(traceback.format_exc())
+
+# Render theme toggle
+render_theme_toggle()

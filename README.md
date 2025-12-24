@@ -17,6 +17,7 @@ Catch model drift before it kills your product.
 | Day 8      | Phoenix Integration (OpenTelemetry Tracing)     | [Twitter thread](https://x.com/AICareerAcc/status/2001580756691304807)          |
 | Day 9      | Multi-Modal Evaluation (Vision Support)         | [Twitter thread](https://x.com/AICareerAcc/status/2002209157446054286)  |
 | Day 10     | RAG-Specific Evaluations (Retrieval Quality)    | [Twitter thread](https://x.com/AICareerAcc/status/2002984056078692406) |
+| Day 11     | Dashboard Polish (Dark Mode, PDF Export, Cost Calculator) | [Twitter thread](https://x.com/AICareerAcc/status/2003685447420289532) |
 
 ## Project Log
 
@@ -602,7 +603,73 @@ Avg MRR:         ~0.89 (relevant chunk usually ranked #1)
    - Track retrieval quality over time
    - Detect when new documents degrade search
    - Flag when embeddings need regeneration
+
 ---
+
+### Day 11 – Dashboard Polish (Enterprise-Ready UI)
+
+**Goal:** Transform the dashboard from functional tool → production-ready product with enterprise polish.
+
+---
+
+#### What We Built
+
+**Complete Dashboard Overhaul with Professional Features:**
+
+1. **🌙 Dark Mode Theme Toggle**
+   - Native Streamlit theme integration with custom CSS
+   - Real-time theme switching via sidebar toggle
+   - GitHub-inspired dark color scheme (#0e1117 background, #58a6ff accents)
+   - Persistent theme preference across all dashboard pages
+   - Mobile-optimized theme styles
+
+2. **💰 Cost Savings Calculator**
+   - Interactive ROI calculator on Model Comparison page
+   - Compare any model vs GPT-4o baseline (or most expensive model)
+   - Configurable usage projections (evals per day)
+   - Shows daily, weekly, monthly, and annual savings
+   - Accuracy trade-off analysis (warns if switching reduces accuracy)
+   - Real-world impact: "Switching to grok-3 saves $XXX/month"
+
+3. **📄 Executive PDF Export**
+   - Professional PDF reports using ReportLab
+   - Model Comparison Report:
+     - Executive summary with key metrics
+     - Model leaderboard table with rankings
+     - Cost vs Accuracy scatter plot
+     - Recommendations with composite scoring
+     - Cost savings projections
+   - Run Detail Report:
+     - Overall performance metrics
+     - Category-wise breakdown
+     - Top question failures with reasoning
+   - One-click export from dashboard
+   - Shareable with non-technical stakeholders
+
+4. **📱 Mobile Responsive Design**
+   - CSS media queries for screens <768px
+   - Automatic column stacking on mobile devices
+   - Responsive charts (100% width on small screens)
+   - Horizontal scroll for wide tables
+   - Touch-friendly button sizing
+   - Works seamlessly on tablets and phones
+
+**Quick Start:**
+
+```bash
+# Install new dependencies (if not already installed)
+pip install reportlab kaleido
+
+# Start dashboard
+python scripts/start_all.py
+
+# Try it out:
+# 1. Click theme toggle (🔄) in sidebar to switch dark/light mode
+# 2. Navigate to Model Comparison page
+# 3. Adjust "Evaluations per day" slider to see cost projections
+# 4. Click "📄 Export PDF" button to generate executive report
+# 5. View dashboard on mobile device - fully responsive!
+```
 
 ## Built in Public 🏗️
 Follow the journey on Twitter/X, LinkedIn

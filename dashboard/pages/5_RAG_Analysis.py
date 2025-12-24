@@ -13,9 +13,13 @@ import os
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.api_client import get_api_client
+from utils.theme_manager import apply_theme, render_theme_toggle, get_plotly_template, apply_plot_theme
 
 # Page config
 st.set_page_config(page_title="RAG Analysis - Eval Dashboard", page_icon="🔍", layout="wide")
+
+# Apply theme
+apply_theme()
 
 st.title("🔍 RAG Analysis - Retrieval Quality Tracker")
 st.markdown("Monitor retrieval precision/recall, answer grounding, and RAG-specific drift")
@@ -203,8 +207,10 @@ with tab1:
         yaxis=dict(range=[0, 1]),
         height=500
     )
+    
+    apply_plot_theme(fig)
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, theme=None)
 
     st.caption("""
     **Precision@K**: Percentage of retrieved chunks that are relevant
@@ -243,8 +249,10 @@ with tab2:
         yaxis=dict(range=[0, 1]),
         height=500
     )
+    
+    apply_plot_theme(fig2)
 
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig2, use_container_width=True, theme=None)
 
     st.caption("""
     **Answer Score**: How correct the final answer is
@@ -282,8 +290,10 @@ with tab3:
         hovermode='x unified',
         height=500
     )
+    
+    apply_plot_theme(fig3)
 
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig3, use_container_width=True, theme=None)
 
 st.divider()
 
@@ -391,3 +401,6 @@ st.markdown("""
 # Footer
 st.divider()
 st.caption("RAG Analysis Dashboard | Powered by FastAPI + Streamlit | Data updates in real-time")
+
+# Render theme toggle
+render_theme_toggle()

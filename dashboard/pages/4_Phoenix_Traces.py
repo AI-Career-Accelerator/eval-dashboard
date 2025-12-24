@@ -5,12 +5,21 @@ Visualize LLM execution traces with Arize Phoenix observability.
 import streamlit as st
 import requests
 from datetime import datetime
+import sys
+import os
+
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.theme_manager import apply_theme, render_theme_toggle
 
 st.set_page_config(
     page_title="Phoenix Traces",
     page_icon="🔍",
     layout="wide"
 )
+
+# Apply theme
+apply_theme()
 
 st.title("🔍 Phoenix Observability")
 st.markdown("**Visualize LLM execution traces with waterfall timelines**")
@@ -160,4 +169,7 @@ else:
 
 # Footer
 st.divider()
-st.caption(f"Built in Public - Day 8/14 | Phoenix Integration")
+st.caption(f"Built in Public - Day 11/14 | Dashboard Polish + Dark Mode!")
+
+# Render theme toggle
+render_theme_toggle()

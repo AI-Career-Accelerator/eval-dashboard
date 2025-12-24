@@ -3,6 +3,12 @@ Eval Dashboard - Main App
 Streamlit dashboard for AI model evaluation tracking and drift detection.
 """
 import streamlit as st
+import sys
+import os
+
+# Add utils to path
+sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
+from theme_manager import apply_theme, render_theme_toggle
 
 # Page configuration
 st.set_page_config(
@@ -12,24 +18,8 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
-st.markdown("""
-    <style>
-    .main-header {
-        font-size: 3rem;
-        font-weight: bold;
-        color: #1f77b4;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .metric-card {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 0.5rem 0;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# Apply theme
+apply_theme()
 
 # Header
 st.markdown('<h1 class="main-header">📊 Eval Dashboard</h1>', unsafe_allow_html=True)
@@ -139,4 +129,7 @@ if api_up:
         st.warning(f"Could not fetch stats: {str(e)}")
 
 st.divider()
-st.caption("Built in Public - Day 8/14 | Now with Phoenix Observability!")
+st.caption("Built in Public - Day 11/14 | Dashboard Polish + Dark Mode!")
+
+# Render theme toggle in sidebar
+render_theme_toggle()

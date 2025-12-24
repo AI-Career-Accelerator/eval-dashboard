@@ -12,9 +12,13 @@ import os
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.api_client import get_api_client
+from utils.theme_manager import apply_theme, render_theme_toggle, get_plotly_template, apply_plot_theme
 
 # Page config
 st.set_page_config(page_title="Home - Eval Dashboard", page_icon="📈", layout="wide")
+
+# Apply theme
+apply_theme()
 
 st.title("📈 Home - Model Performance Tracker")
 st.markdown("Track accuracy trends and catch drift before it impacts production")
@@ -164,11 +168,12 @@ fig.update_layout(
         y=1.02,
         xanchor="right",
         x=1
-    ),
-    template="plotly_white"
+    )
 )
 
-st.plotly_chart(fig, use_container_width=True)
+apply_plot_theme(fig)
+
+st.plotly_chart(fig, use_container_width=True, theme=None)
 
 # Summary Statistics
 st.header("📈 Summary Statistics")
@@ -220,3 +225,6 @@ st.dataframe(recent_runs, use_container_width=True, hide_index=True)
 
 st.divider()
 st.caption("💡 Tip: Click on a model in the legend to hide/show it on the chart")
+
+# Render theme toggle
+render_theme_toggle()
